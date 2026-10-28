@@ -40,6 +40,16 @@
         </div>
       </header>
 
+      <!-- Nouvelle version prête : rien ne change tant que l'utilisateur
+           n'a pas touché « Mettre à jour » (voir js/pwa/register-service-worker.js) -->
+      <section class="carte" id="carte-mise-a-jour" aria-labelledby="titre-mise-a-jour" hidden>
+        <h2 id="titre-mise-a-jour">Nouvelle version disponible</h2>
+        <p>Une nouvelle version d'Omni-Transcripteur est prête. Vos
+           transcriptions et vos réglages restent tels quels.</p>
+        <p id="message-mise-a-jour" class="petit" role="status"></p>
+        <button type="button" class="bouton bouton--principal" id="bouton-mise-a-jour">Mettre à jour</button>
+      </section>
+
       <!-- ====== 1. Le modèle de reconnaissance vocale ====== -->
       <section class="carte" id="carte-modele" aria-labelledby="titre-modele">
         <h2 id="titre-modele">Modèle de reconnaissance vocale</h2>

@@ -10,7 +10,7 @@
 // ⚠️ À CHAQUE MODIFICATION d'un fichier de l'application, augmenter ce
 // numéro (v1 → v2 → v3…). Sinon les téléphones garderont l'ancienne
 // version en réserve.
-const VERSION_CACHE = "omni-transcripteur-app-v17";
+const VERSION_CACHE = "omni-transcripteur-app-v18";
 
 // Liste des fichiers à garder en réserve.
 // Chemins relatifs : ils fonctionnent aussi dans le sous-dossier GitHub Pages.
@@ -70,15 +70,25 @@ const FICHIERS_APPLICATION = [
   "./icons/maskable-512.png",
 ];
 
-// 1) Installation : on télécharge et range tous les fichiers
+// 1) Installation : on télécharge et range tous les fichiers.
+//    Volontairement, PAS de self.skipWaiting() ici : une nouvelle version
+//    attend que l'utilisateur touche « Mettre à jour » (voir le message
+//    « activer » plus bas). Rien ne change par surprise, et jamais pendant
+//    un enregistrement. Seule exception, fixée par le navigateur : si
+//    l'application est complètement fermée, la nouvelle version est là à la
+//    prochaine ouverture.
 self.addEventListener("install", (evenement) => {
   evenement.waitUntil(
     caches
       .open(VERSION_CACHE)
       .then((cache) => cache.addAll(FICHIERS_APPLICATION))
-      // Active tout de suite la nouvelle version, sans attendre
-      .then(() => self.skipWaiting())
   );
+});
+
+// L'utilisateur a touché « Mettre à jour » : cette version prend le relais.
+// La page le remarque (événement « controllerchange ») et se recharge.
+self.addEventListener("message", (evenement) => {
+  if (evenement.data && evenement.data.type === "activer") self.skipWaiting();
 });
 
 // 2) Activation : on supprime les réserves des anciennes versions de

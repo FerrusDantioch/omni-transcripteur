@@ -91,6 +91,12 @@ icons/                     icônes 192 et 512 px (« any » et « maskable »)
   `VERSION_CACHE` dans `sw.js` (v2 → v3…), sinon les téléphones gardent
   l'ancienne version. Tout nouveau fichier doit aussi être ajouté à la
   liste `FICHIERS_APPLICATION` de `sw.js`.
+- **Nouvelle version : jamais par surprise.** Elle attend un appui sur
+  « Mettre à jour » (`#carte-mise-a-jour`, gérée dans
+  `js/pwa/register-service-worker.js`), refusé pendant un enregistrement ou
+  une transcription. Pas de `self.skipWaiting()` dans l'installation de
+  `sw.js` (seulement au message `{ type: "activer" }`). Le rechargement
+  unique de la toute première installation (COOP/COEP) reste inchangé.
 - **Transformers.js et ONNX Runtime** : les versions dans `vendor/` doivent aller
   ensemble (voir `vendor/transformers/README.md`). Si on change la version
   d'ONNX Runtime, changer aussi `CACHE_MOTEUR` dans `js/transcription/worker.js`.
