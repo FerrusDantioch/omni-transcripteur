@@ -131,6 +131,17 @@ icons/                     icônes 192 et 512 px (« any » et « maskable »)
 - Ne jamais lancer `pkill -f motif` dans une commande qui contient ce motif
   (la commande se tue elle-même).
 
+## Tests
+
+`node tests/tester.js` (Playwright + Chromium, 17 vérifications ; pour le
+Chromium installé ailleurs : `CHROMIUM_PATH=…`). `tests/outils.js` = boîte à
+outils commune (même fichier dans plusieurs applications) : serveur local à
+la forme d'adresse de GitHub Pages (port libre), contrôles communs (fichiers
+du service worker présents, téléphone sans débordement, `[hidden]` respecté,
+hors ligne, aucun autre site contacté, aucune erreur JavaScript). Le dossier
+`tests/` ne sert qu'au développement : il n'est pas dans le cache et ne
+demande pas de nouvelle version.
+
 ## Points de vigilance connus
 
 - **Performances sur téléphone** : utiliser de petits modèles Whisper

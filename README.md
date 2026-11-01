@@ -163,6 +163,29 @@ Tous les chemins du projet sont **relatifs** (ils commencent par `./`) : le
 site fonctionne donc dans le sous-dossier `/omni-transcripteur/` sans réglage
 supplémentaire.
 
+## Tests automatiques
+
+Les tests ouvrent l’application dans un vrai navigateur, font les gestes
+d’une personne et vérifient le résultat, y compris sans internet. Ils ne
+contactent aucun site. Ils ne servent qu’au développement : l’application
+n’en a pas besoin pour fonctionner.
+
+Il faut [Node.js](https://nodejs.org) (version 22 ou plus récente), puis,
+une seule fois, dans le dossier de l’application :
+
+```
+npm install playwright
+npx playwright install chromium
+```
+
+Ensuite, à chaque fois :
+
+```
+node tests/tester.js
+```
+
+Le bilan s’affiche à la fin : « Échecs : 0 » veut dire que tout va bien.
+
 ## Technologies
 
 - HTML, CSS et JavaScript « simple » (modules ES), sans framework.
