@@ -110,7 +110,7 @@ export function creerListeCaptures({ surTranscrire }) {
     lien.download = nomDeFichier(`${fiche.titre} - ${nom}`, "wav");
     lien.click();
     setTimeout(() => URL.revokeObjectURL(lien.href), 60000);
-    afficherMessage(message, `✓ Fichier enregistré dans vos téléchargements (${formaterTaille(fichier.size)}).`, "succes");
+    afficherMessage(message, `✓ Fichier enregistré dans tes téléchargements (${formaterTaille(fichier.size)}).`, "succes");
   }
 
   function creerBouton(texte, description, action, principal = false) {
@@ -124,7 +124,7 @@ export function creerListeCaptures({ surTranscrire }) {
       cacherMessage(message);
       action().catch((erreur) => {
         console.error(erreur);
-        afficherMessage(message, "L'opération n'a pas pu être faite. Réessayez.", "erreur");
+        afficherMessage(message, "L'opération n'a pas pu être faite. Réessaie.", "erreur");
       });
     });
     return bouton;

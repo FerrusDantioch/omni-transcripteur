@@ -118,9 +118,9 @@ export function creerLegende(t, { enCorrection, surRenommer, surFusionner, surBa
   const aide = document.createElement("p");
   aide.className = "petit";
   aide.textContent = enCorrection
-    ? "Pour chaque phrase mal attribuée, choisissez la bonne personne dans la liste. " +
+    ? "Pour chaque phrase mal attribuée, choisis la bonne personne dans la liste. " +
       "Les changements sont enregistrés tout de suite."
-    : "Une phrase est attribuée à la mauvaise personne ? Touchez « Corriger qui parle ».";
+    : "Une phrase est attribuée à la mauvaise personne ? Touche « Corriger qui parle ».";
 
   legende.append(titre, liste, basculer, aide);
   return legende;

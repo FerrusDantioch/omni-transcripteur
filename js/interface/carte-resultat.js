@@ -61,9 +61,9 @@ export function creerCarteResultat({ surModification }) {
   boutonCopier.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(enTexteBrut(transcriptionAffichee, false));
-      afficherMessage(message, "✓ Texte copié. Vous pouvez le coller où vous voulez.", "succes");
+      afficherMessage(message, "✓ Texte copié. Tu peux le coller où tu veux.", "succes");
     } catch {
-      afficherMessage(message, "La copie n'a pas fonctionné. Sélectionnez le texte à la main.", "erreur");
+      afficherMessage(message, "La copie n'a pas fonctionné. Sélectionne le texte à la main.", "erreur");
     }
   });
 
@@ -75,7 +75,7 @@ export function creerCarteResultat({ surModification }) {
     lien.download = nomDeFichier(transcriptionAffichee.titre, "txt");
     lien.click();
     setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
-    afficherMessage(message, "✓ Fichier enregistré dans vos téléchargements.", "succes");
+    afficherMessage(message, "✓ Fichier enregistré dans tes téléchargements.", "succes");
   });
 
   boutonEffacer.addEventListener("click", () => {
@@ -220,7 +220,7 @@ export function creerCarteResultat({ surModification }) {
       vide.className = "note";
       vide.textContent =
         t.phrases.length > 0
-          ? "Aucune phrase ne correspond à votre recherche."
+          ? "Aucune phrase ne correspond à ta recherche."
           : enCoursActuel
             ? "Le texte apparaîtra ici au fur et à mesure…"
             : "Aucune parole détectée.";

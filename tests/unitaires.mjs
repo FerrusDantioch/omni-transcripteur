@@ -272,11 +272,14 @@ describe("Service Worker (sw.js)", () => {
         return e.isDirectory() ? parcourir(rel) : [`./${rel}`];
       });
 
-    for (const dossier of ["css", "js", "icons"]) {
+    for (const dossier of ["css", "js", "icons", "assets"]) {
       for (const fichier of parcourir(dossier)) {
         assert.ok(listes.has(fichier), `Fichier oublié dans FICHIERS_APPLICATION de sw.js : ${fichier}`);
       }
     }
+
+    const versionContenu = fs.readFileSync(path.join(RACINE, "js/version.js"), "utf8");
+    assert.match(versionContenu, /self\.VERSION_APP\s*=\s*"\d+\.\d+\.\d+"/, "Numéro de version invalide dans js/version.js");
   });
 });
 

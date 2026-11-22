@@ -38,7 +38,7 @@ export function creerZoneIntervenants({ intervenants, nombreVoix, surChangement,
     afficherMessage(
       avertissement,
       `Ce téléphone a peu de mémoire (environ ${memoire} Go) : la reconnaissance des intervenants ` +
-        "risque d'échouer sur les longs enregistrements. En cas de problème, désactivez-la : " +
+        "risque d'échouer sur les longs enregistrements. En cas de problème, désactive-la : " +
         "la transcription fonctionnera normalement, sans distinction de voix.",
       "erreur"
     );

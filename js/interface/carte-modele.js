@@ -62,7 +62,7 @@ export function creerCarteModele({ surTelecharger, surPause }) {
       texte.textContent =
         `Pour transcrire, l'application a besoin du modèle « ${nom} » (${libelleTaille(qualite, device)}, ` +
         `plus ${TAILLE_MOTEUR_MO} Mo de moteur la première fois). Il se télécharge une seule fois, ` +
-        "puis tout fonctionne hors ligne. Conseil : utilisez le Wi-Fi.";
+        "puis tout fonctionne hors ligne. Conseil : utilise le Wi-Fi.";
       boutonTelecharger.hidden = false;
       boutonTelecharger.textContent = dejaTelecharge > 0
         ? `▶️ Reprendre le téléchargement (${formaterTaille(dejaTelecharge)} déjà reçus)`

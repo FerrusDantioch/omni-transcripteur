@@ -2,14 +2,14 @@
   "id": "/omni-transcripteur/",
   "name": "Omni-Transcripteur",
   "short_name": "Omni-Transcripteur",
-  "description": "Transforme la voix en texte, directement sur votre appareil, même hors ligne.",
+  "description": "Transforme la voix en texte, directement sur ton appareil, même hors ligne.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f7f7f5",
-  "theme_color": "#1f5fa8",
+  "background_color": "#14111d",
+  "theme_color": "#1d1929",
   "categories": ["productivity", "utilities"],
   "icons": [
     {

@@ -2,15 +2,23 @@
 // Section « Réglages » : qualité, moteur de calcul, stockage.
 // ==========================================================
 
-import { QUALITES, MOTEURS, VITESSES } from "../config.js";
+import { QUALITES, MOTEURS, VITESSES, THEMES } from "../config.js";
 import { formaterTaille } from "../outils/format.js";
 import { afficherMessage, cacherMessage } from "./messages.js";
 import { demanderConfirmation } from "./fenetres.js";
 
 const $ = (id) => document.getElementById(id);
 
-export function creerReglages({ reglages, surChangement, surSupprimerModeles }) {
+export function creerReglages({ reglages, surChangement, surChangementTheme, surSupprimerModeles }) {
   const message = $("reglages-message");
+
+  remplirChoix(
+    $("choix-theme"),
+    "theme",
+    Object.entries(THEMES).map(([cle, t]) => ({ valeur: cle, titre: t.nom, description: t.description })),
+    reglages.theme,
+    (valeur) => surChangementTheme?.(valeur)
+  );
 
   remplirChoix(
     $("choix-qualite"),
@@ -72,13 +80,15 @@ export function creerReglages({ reglages, surChangement, surSupprimerModeles }) 
     const protege = await navigator.storage.persisted?.();
     info.textContent =
       `Espace utilisé par l'application : ${formaterTaille(usage)}.` +
-      (protege ? " Les données sont protégées contre l'effacement automatique." : "");
+      (protege ? " Tes données sont protégées contre l'effacement automatique." : "");
   }
 
   return {
-    // Grise les choix pendant un traitement
+    // Grise les choix du modèle pendant un traitement (le thème reste toujours modifiable)
     activer(actif) {
-      for (const champ of document.querySelectorAll("#reglages input, #bouton-supprimer-modeles")) {
+      for (const champ of document.querySelectorAll(
+        "#choix-qualite input, #choix-moteur input, #choix-vitesse input, #bouton-supprimer-modeles"
+      )) {
         champ.disabled = !actif;
       }
     },

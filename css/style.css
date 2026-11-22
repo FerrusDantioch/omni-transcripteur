@@ -4,64 +4,93 @@
    puis on adapte pour les grands écrans).
    ========================================================== */
 
-/* ---------- Couleurs du thème clair (par défaut) ----------
-   Les « variables » (--nom) permettent de changer toutes les
-   couleurs d'un coup pour le thème sombre. */
-:root {
-  --fond: #f7f7f5;
+/* ---------- Thème Omni (violet nuit, par défaut) ----------
+   Reprend la palette contrastée de l'écosystème Omni.
+   Le thème actif est posé sur <html> par js/theme-initial.js
+   (data-theme="omni" | "sombre" | "clair"). */
+:root,
+[data-theme="omni"] {
+  --fond: #14111d;
+  --surface: #1d1929;
+  --texte: #e9e4f2;
+  --texte-doux: #b3abc7;
+  --bordure: #41385c;
+  --accent: #a777ff;
+  --accent-texte: #140d24;
+  --focus: #d6c2ff;
+  --erreur-fond: #3b1721;
+  --erreur-texte: #ffb4be;
+  --succes-fond: #163024;
+  --succes-texte: #a8e0be;
+  --info-fond: #241d3d;
+  --info-texte: #d6c2ff;
+  --enregistrement: #ff6b7a;
+  /* Couleurs des intervenants (toujours accompagnées du nom écrit) */
+  --voix-0: #b892ff;
+  --voix-1: #ffb86b;
+  --voix-2: #81c995;
+  --voix-3: #8ab4f8;
+  --voix-4: #f28b82;
+  --voix-5: #78d9cc;
+  --voix-6: #f48fb1;
+  --voix-7: #d7b19d;
+  color-scheme: dark;
+}
+
+/* ---------- Thème sombre classique (neutre, sans violet) ---------- */
+[data-theme="sombre"] {
+  --fond: #1c1c1e;
+  --surface: #2a2a2d;
+  --texte: #e6e6e6;
+  --texte-doux: #b4b4bc;
+  --bordure: #4a4a52;
+  --accent: #7aa7ff;
+  --accent-texte: #0e1726;
+  --focus: #ffb86b;
+  --erreur-fond: #3b1714;
+  --erreur-texte: #ffb4ab;
+  --succes-fond: #15301d;
+  --succes-texte: #a6dcb2;
+  --info-fond: #1c2c42;
+  --info-texte: #c2daf7;
+  --enregistrement: #ff6b6b;
+  --voix-0: #8ab4f8;
+  --voix-1: #ffb86b;
+  --voix-2: #81c995;
+  --voix-3: #d7aefb;
+  --voix-4: #f28b82;
+  --voix-5: #78d9cc;
+  --voix-6: #f48fb1;
+  --voix-7: #d7b19d;
+  color-scheme: dark;
+}
+
+/* ---------- Thème clair ---------- */
+[data-theme="clair"] {
+  --fond: #f1eff5;
   --surface: #ffffff;
-  --texte: #1a1a1a;
-  --texte-doux: #4a4a4a;
-  --bordure: #c9c9c4;
-  --accent: #1f5fa8;          /* bleu de l'application */
-  --accent-texte: #ffffff;    /* texte posé sur le bleu */
-  --focus: #b35c00;           /* contour visible quand on navigue au clavier */
+  --texte: #1c1a24;
+  --texte-doux: #524e61;
+  --bordure: #c8c4d4;
+  --accent: #5b3fd0;
+  --accent-texte: #ffffff;
+  --focus: #b35c00;
   --erreur-fond: #fdecea;
   --erreur-texte: #8a1c12;
   --succes-fond: #e7f4ea;
   --succes-texte: #1d5c2e;
-  --info-fond: #e8f0fa;
-  --info-texte: #17406e;
-  --enregistrement: #c62828;  /* point rouge pendant l'enregistrement */
-  /* Couleurs des intervenants (toujours accompagnées du nom écrit) */
-  --voix-0: #1f5fa8;
+  --info-fond: #ece8fa;
+  --info-texte: #362285;
+  --enregistrement: #c62828;
+  --voix-0: #5b3fd0;
   --voix-1: #b35c00;
   --voix-2: #2e7d32;
-  --voix-3: #8e24aa;
+  --voix-3: #1f5fa8;
   --voix-4: #c62828;
   --voix-5: #00796b;
   --voix-6: #ad1457;
   --voix-7: #6d4c41;
-}
-
-/* ---------- Couleurs du thème sombre ----------
-   Appliquées automatiquement si le téléphone est en mode sombre. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fond: #121417;
-    --surface: #1d2025;
-    --texte: #f2f2f2;
-    --texte-doux: #c4c7cc;
-    --bordure: #4a4f57;
-    --accent: #8ab4f8;
-    --accent-texte: #0b1a2e;
-    --focus: #ffb86b;
-    --erreur-fond: #3b1714;
-    --erreur-texte: #ffb4ab;
-    --succes-fond: #15301d;
-    --succes-texte: #a6dcb2;
-    --info-fond: #172a42;
-    --info-texte: #b9d4f5;
-    --enregistrement: #ff6b6b;
-    --voix-0: #8ab4f8;
-    --voix-1: #ffb86b;
-    --voix-2: #81c995;
-    --voix-3: #d7aefb;
-    --voix-4: #f28b82;
-    --voix-5: #78d9cc;
-    --voix-6: #f48fb1;
-    --voix-7: #d7b19d;
-  }
+  color-scheme: light;
 }
 
 /* ---------- Bases ---------- */
@@ -264,9 +293,23 @@ legend {
   margin: 0;
 }
 
-/* Lien de la section « À propos » (à la fin des Réglages) : même couleur que
-   le texte autour, juste souligné ; une adresse trop longue pour un petit
-   écran passe à la ligne au lieu de déborder. */
+/* Bloc « À propos » (à la fin des Réglages) : logo Omni, version, licences, liens. */
+.a-propos-entete {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.a-propos-logo {
+  border-radius: 0.75rem;
+  flex-shrink: 0;
+}
+
+.a-propos-entete p {
+  margin: 0.15rem 0 0;
+}
+
 .a-propos-lien a {
   color: inherit;
   text-underline-offset: 3px;

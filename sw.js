@@ -7,10 +7,10 @@
 // peut gérer que les pages de son dossier et des sous-dossiers.
 // ==========================================================
 
-// ⚠️ À CHAQUE MODIFICATION d'un fichier de l'application, augmenter ce
-// numéro (v1 → v2 → v3…). Sinon les téléphones garderont l'ancienne
-// version en réserve.
-const VERSION_CACHE = "omni-transcripteur-app-v22";
+// Source unique du numéro de version : changer self.VERSION_APP dans
+// js/version.js met automatiquement à jour le cache et « À propos ».
+importScripts("./js/version.js");
+const VERSION_CACHE = `omni-transcripteur-app-${self.VERSION_APP}`;
 const CACHE_PARTAGE = "omni-transcripteur-partage";
 
 // Liste des fichiers à garder en réserve.
@@ -22,7 +22,11 @@ const FICHIERS_APPLICATION = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./licences-tierces.txt",
   "./css/style.css",
+  "./assets/logo-omni-systeme.webp",
+  "./js/version.js",
+  "./js/theme-initial.js",
   "./js/app.js",
   "./js/config.js",
   "./js/pwa/register-service-worker.js",

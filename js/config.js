@@ -86,6 +86,28 @@ export const VITESSES = {
 
 export const VITESSE_PAR_DEFAUT = "douce";
 
+// Thèmes d'affichage proposés dans les réglages (palette de l'écosystème Omni)
+export const THEMES = {
+  omni: {
+    nom: "Omni (violet nuit)",
+    description: "Thème violet nuit de l'écosystème Omni, reposant pour les yeux.",
+  },
+  auto: {
+    nom: "Automatique",
+    description: "Suit le réglage clair ou sombre de ton appareil.",
+  },
+  sombre: {
+    nom: "Sombre",
+    description: "Thème sombre neutre, sans teinte violette.",
+  },
+  clair: {
+    nom: "Clair",
+    description: "Fond clair et texte très contrasté.",
+  },
+};
+
+export const THEME_PAR_DEFAUT = "omni";
+
 // Calcule le nombre de cœurs à utiliser selon la vitesse choisie
 export function nombreDeCoeurs(vitesse) {
   const coeurs = navigator.hardwareConcurrency || 2;

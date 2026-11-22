@@ -43,7 +43,7 @@ export function creerCarteHistorique({ surOuvrir, surRenommage, surSuppression }
       );
     } catch (erreur) {
       console.error(erreur);
-      afficherMessage(message, "La sauvegarde n'a pas pu être créée. Réessayez.", "erreur");
+      afficherMessage(message, "La sauvegarde n'a pas pu être créée. Réessaie.", "erreur");
     }
   });
 
@@ -153,7 +153,7 @@ export function creerCarteHistorique({ surOuvrir, surRenommage, surSuppression }
     bouton.addEventListener("click", () => {
       action().catch((erreur) => {
         console.error(erreur);
-        afficherMessage(message, "L'opération n'a pas pu être faite. Réessayez.", "erreur");
+        afficherMessage(message, "L'opération n'a pas pu être faite. Réessaie.", "erreur");
       });
     });
     return bouton;

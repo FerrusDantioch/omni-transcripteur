@@ -286,7 +286,7 @@ const listeCaptures = creerListeCaptures({ surTranscrire: traiterCapture });
 function importerPartie() {
   zoneIntervenants.allumer();
   carteTranscription.afficherInfo(
-    "Mode JDR : indiquez le nombre de personnes qui parlent (vous compris), puis choisissez " +
+    "Mode JDR : indique le nombre de personnes qui parlent (toi compris), puis choisis " +
       "le fichier de la partie avec « 📁 Choisir un fichier audio »."
   );
   const reduire = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -315,6 +315,10 @@ const carteHistorique = creerCarteHistorique({
 
 const interfaceReglages = creerReglages({
   reglages,
+  surChangementTheme: (theme) => {
+    reglages = enregistrerReglages({ theme });
+    window.appliquerThemeApp?.(theme);
+  },
   surChangement: (modifications) => {
     reglages = enregistrerReglages(modifications);
     // Changer de moteur ou de vitesse demande un worker neuf
@@ -504,7 +508,7 @@ async function traiterAudio(fichierAudio, { titre, source }) {
 
     if (transcription.phrases.length === 0) {
       carteTranscription.afficherInfo(
-        "Aucune parole n'a été détectée. Vérifiez la langue choisie et que le son est assez fort."
+        "Aucune parole n'a été détectée. Vérifie la langue choisie et que le son est assez fort."
       );
     } else if (interrompue) {
       carteTranscription.afficherInfo("Transcription arrêtée. Le texte déjà obtenu est conservé dans l'historique.");
@@ -537,7 +541,7 @@ async function traiterCapture(fiche) {
   if (!["pret", "disponible", "chargement"].includes(etatModele)) {
     carteTranscription.afficherInfo(
       "Le modèle de reconnaissance vocale doit d'abord être téléchargé (carte tout en haut), " +
-        "puis appuyez de nouveau sur « 📝 Transcrire » dans le Mode JDR."
+        "puis appuie de nouveau sur « 📝 Transcrire » dans le Mode JDR."
     );
     document.getElementById("carte-modele").scrollIntoView({ behavior: reduire ? "auto" : "smooth" });
     return;
@@ -551,8 +555,8 @@ async function traiterCapture(fiche) {
         titre: "Repartir du début ?",
         texte:
           `Une transcription est déjà commencée (${nomLangue}, qualité « ${nomQualite} »). ` +
-          "Vos réglages actuels sont différents : continuer effacera cet avancement et repartira du début. " +
-          "Pour reprendre là où vous vous êtes arrêté, remettez cette langue et cette qualité.",
+          "Tes réglages actuels sont différents : continuer effacera cet avancement et repartira du début. " +
+          "Pour reprendre là où tu t'es arrêté, remets cette langue et cette qualité.",
         libelleConfirmer: "Repartir du début",
       });
       if (!ok) return;
@@ -581,7 +585,7 @@ async function traiterCapture(fiche) {
     intervenants: [{ nom: fiche.nomJoueur }],
     interrompue: false,
   };
-  const etapes = { micro: "Transcription de votre piste (1/2)…", autres: "Transcription de la piste des autres joueurs (2/2)…" };
+  const etapes = { micro: "Transcription de ta piste (1/2)…", autres: "Transcription de la piste des autres joueurs (2/2)…" };
 
   try {
     const chargement = attendreModelePret();
@@ -608,7 +612,7 @@ async function traiterCapture(fiche) {
     if (resultat.interrompue) {
       carteResultat.afficher(transcription);
       carteTranscription.afficherInfo(
-        "Transcription mise en pause. Appuyez de nouveau sur « 📝 Transcrire » dans le Mode JDR : " +
+        "Transcription mise en pause. Appuie de nouveau sur « 📝 Transcrire » dans le Mode JDR : " +
           "elle reprendra là où elle s'est arrêtée (avec la même langue et la même qualité)."
       );
       return;
@@ -625,7 +629,7 @@ async function traiterCapture(fiche) {
     carteResultat.afficher(transcription);
     carteResultat.montrer();
     const fin = `✓ Transcription terminée (${formaterDuree(transcription.duree)} de partie) et enregistrée dans l'historique.`;
-    carteTranscription.afficherInfo(resultat.infoVoix ? `${fin} ${resultat.infoVoix}` : `${fin} Renommez les intervenants dans le résultat.`);
+    carteTranscription.afficherInfo(resultat.infoVoix ? `${fin} ${resultat.infoVoix}` : `${fin} Renomme les intervenants dans le résultat.`);
   } catch (erreur) {
     console.error(erreur);
     carteTranscription.afficherErreur(erreur.code ?? codeErreur(erreur));
@@ -669,6 +673,9 @@ window.addEventListener("beforeunload", (e) => {
 // ---------------------------------------------------------------
 // Démarrage
 // ---------------------------------------------------------------
+const elVersion = document.getElementById("app-version");
+if (elVersion && window.VERSION_APP) elVersion.textContent = window.VERSION_APP;
+
 async function verifierPartage() {
   const partage = await recupererFichierPartage();
   if (!partage) return;
@@ -677,7 +684,7 @@ async function verifierPartage() {
   } else {
     fichierPartageEnAttente = partage;
     carteTranscription.afficherInfo(
-      `Fichier audio reçu (« ${partage.titre} »). Téléchargez le modèle ci-dessus si besoin : la transcription démarrera dès qu'il sera prêt.`
+      `Fichier audio reçu (« ${partage.titre} »). Télécharge le modèle ci-dessus si besoin : la transcription démarrera dès qu'il sera prêt.`
     );
   }
 }

@@ -1,0 +1,37 @@
+Omni-Transcripteur — Licences des bibliothèques et modèles tiers
+================================================================
+
+Le code d'Omni-Transcripteur lui-même est distribué sous licence
+Creative Commons BY-NC-ND 4.0 (© 2026 Ferrus Dantioch — voir LICENSE).
+
+Les bibliothèques et modèles d'intelligence artificielle embarqués dans
+l'application restent soumis à leurs propres licences :
+
+1. Transformers.js (@huggingface/transformers 4.3.0)
+   - Rôle : exécution locale de Whisper et des modèles de voix dans le navigateur.
+   - Licence : Apache License 2.0
+   - Texte complet : vendor/transformers/LICENSE-transformers.txt
+   - Source : https://huggingface.co/docs/transformers.js
+
+2. ONNX Runtime Web (onnxruntime-web 1.31.0-dev.20260914)
+   - Rôle : moteur de calcul WebAssembly / WebGPU.
+   - Licence : MIT (© Microsoft Corporation)
+   - Texte complet : vendor/transformers/LICENSE-onnxruntime.txt
+   - Source : https://onnxruntime.ai/
+
+3. pyannote/segmentation-3.0 (conversion ONNX par k2-fsa/sherpa-onnx)
+   - Rôle : repérage des prises de parole (reconnaissance des intervenants).
+   - Licence : MIT (© 2022 CNRS)
+   - Texte complet : modeles/voix/pyannote-segmentation-3.0/LICENSE
+   - Source : https://huggingface.co/pyannote/segmentation-3.0
+
+4. WeSpeaker ResNet34-LM (conversion ONNX par k2-fsa/sherpa-onnx)
+   - Rôle : empreintes vocales pour regrouper les prises de parole d'une même personne.
+   - Licence : Creative Commons Attribution 4.0 (CC BY 4.0)
+   - Texte complet : modeles/voix/wespeaker-resnet34-LM/LICENSE.txt
+   - Source : https://github.com/wenet-e2e/wespeaker
+
+5. Modèles Whisper (téléchargés à la demande depuis Hugging Face : onnx-community/whisper-*)
+   - Rôle : reconnaissance vocale (OpenAI Whisper converti en ONNX).
+   - Licence : MIT (© OpenAI)
+   - Source : https://huggingface.co/onnx-community

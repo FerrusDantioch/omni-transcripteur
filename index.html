@@ -1,20 +1,24 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="omni">
   <head>
     <meta charset="utf-8" />
     <!-- Adapte la page à la largeur de l'écran du téléphone -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Politique de sécurité : bloque tout site externe, sauf Hugging Face
+         uniquement pour le téléchargement des modèles Whisper. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cdn-lfs.huggingface.co https://cdn-lfs-us-1.huggingface.co https://cdn-lfs-eu-1.huggingface.co; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
     <title>Omni-Transcripteur</title>
     <meta
       name="description"
-      content="Transforme la voix en texte, directement sur votre appareil, même hors ligne."
+      content="Transforme la voix en texte, directement sur ton appareil, même hors ligne."
     />
 
-    <!-- Indique au navigateur que la page gère le thème clair et le thème sombre -->
-    <meta name="color-scheme" content="light dark" />
-    <!-- Couleur de la barre d'état du téléphone, selon le thème -->
-    <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)" />
+    <!-- Couleur de la barre d'état et thème (mis à jour aussitôt par js/theme-initial.js) -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#1d1929" />
 
     <!-- Fiche d'identité de l'application (nom, icônes, couleurs…) -->
     <!-- Tous les chemins commencent par "./" : ils restent valables même
@@ -24,6 +28,9 @@
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
 
     <link rel="stylesheet" href="./css/style.css" />
+    <!-- Source unique de la version + application du thème AVANT le premier rendu (pas de flash) -->
+    <script src="./js/version.js"></script>
+    <script src="./js/theme-initial.js"></script>
     <!-- type="module" : permet de découper le JavaScript en plusieurs fichiers -->
     <script type="module" src="./js/app.js"></script>
   </head>
@@ -35,7 +42,7 @@
         <div>
           <h1>Omni-Transcripteur</h1>
           <p class="entete__intro">
-            La voix en texte, sur votre appareil. Rien n'est envoyé sur internet.
+            La voix en texte, sur ton appareil. Rien n'est envoyé sur internet.
           </p>
         </div>
       </header>
@@ -44,8 +51,8 @@
            n'a pas touché « Mettre à jour » (voir js/pwa/register-service-worker.js) -->
       <section class="carte" id="carte-mise-a-jour" aria-labelledby="titre-mise-a-jour" hidden>
         <h2 id="titre-mise-a-jour">Nouvelle version disponible</h2>
-        <p>Une nouvelle version d'Omni-Transcripteur est prête. Vos
-           transcriptions et vos réglages restent tels quels.</p>
+        <p>Une nouvelle version d'Omni-Transcripteur est prête. Tes
+           transcriptions et tes réglages restent tels quels.</p>
         <p id="message-mise-a-jour" class="petit" role="status"></p>
         <button type="button" class="bouton bouton--principal" id="bouton-mise-a-jour">Mettre à jour</button>
       </section>
@@ -94,29 +101,29 @@
               <option value="6">6 personnes</option>
             </select>
             <p class="petit">
-              Plus fiable si vous indiquez le nombre exact. Fonctionne mieux quand les personnes
+              Plus fiable si tu indiques le nombre exact. Fonctionne mieux quand les personnes
               ne parlent pas en même temps, sans bruit de fond. Ajoute environ 15 à 30 % de temps de calcul.
             </p>
             <details class="conseils">
               <summary>💡 Conseils pour un bon enregistrement</summary>
               <ul>
                 <li>
-                  Posez le téléphone au milieu, à distance égale de chacun, sur un tissu plutôt que
+                  Pose le téléphone au milieu, à distance égale de chacun, sur un tissu plutôt que
                   directement sur la table (les dés et les verres résonnent).
                 </li>
-                <li>Choisissez une pièce calme : pas de musique, de télévision ni de fenêtre ouverte sur la rue.</li>
+                <li>Choisis une pièce calme : pas de musique, de télévision ni de fenêtre ouverte sur la rue.</li>
                 <li>Une personne parle à la fois : les voix qui se chevauchent sont mal reconnues.</li>
                 <li>
-                  Demandez à chacun de dire son prénom au début : il sera facile ensuite de renommer
+                  Demande à chacun de dire son prénom au début : il sera facile ensuite de renommer
                   « Intervenant 1 », « Intervenant 2 »…
                 </li>
-                <li>Indiquez le nombre exact de personnes (« Automatique » en trouve souvent trop).</li>
-                <li>Avant une longue séance, faites un essai de 30 secondes.</li>
+                <li>Indique le nombre exact de personnes (« Automatique » en trouve souvent trop).</li>
+                <li>Avant une longue séance, fais un essai de 30 secondes.</li>
               </ul>
               <p class="petit">
                 <strong>Limites :</strong> les voix qui se chevauchent, le bruit de fond, les voix qui se
                 ressemblent et les réponses très courtes (« oui », « d'accord ») sont souvent mal attribués.
-                Corrigez-les avec « Corriger qui parle » dans le résultat.
+                Corrige-les avec « Corriger qui parle » dans le résultat.
               </p>
             </details>
             <p id="voix-etat" class="petit"></p>
@@ -146,7 +153,7 @@
           </div>
           <p id="aide-transcription" class="note">Le modèle doit d'abord être téléchargé (voir ci-dessus).</p>
           <p id="aide-depot" class="note aide-depot" hidden>
-            Astuce : sur ordinateur, vous pouvez aussi glisser-déposer un fichier audio sur cette carte.
+            Astuce : sur ordinateur, tu peux aussi glisser-déposer un fichier audio sur cette carte.
           </p>
           <div id="zone-dernier-audio" class="zone-dernier-audio" hidden>
             <button type="button" class="bouton bouton--petit bouton--discret" id="bouton-telecharger-audio">
@@ -183,7 +190,7 @@
           <p id="traitement-texte" class="gras">Lecture de l'audio…</p>
           <progress id="traitement-barre" max="100"></progress>
           <p id="traitement-detail" class="petit"></p>
-          <p class="petit">Gardez l'application ouverte et l'écran allumé pendant le traitement.</p>
+          <p class="petit">Garde l'application ouverte et l'écran allumé pendant le traitement.</p>
           <div class="boutons">
             <button type="button" class="bouton" id="bouton-arreter-transcription">
               Arrêter la transcription
@@ -221,9 +228,9 @@
           <!-- Préparation -->
           <div id="capture-preparation" hidden>
             <p id="capture-avertissement" class="message" data-type="erreur" hidden></p>
-            <label class="etiquette" for="capture-nom">Votre nom dans le texte</label>
+            <label class="etiquette" for="capture-nom">Ton nom dans le texte</label>
             <input type="text" id="capture-nom" class="champ-texte" maxlength="40" autocomplete="nickname" />
-            <label class="etiquette" for="capture-autres">Nombre d'autres joueurs (sans vous)</label>
+            <label class="etiquette" for="capture-autres">Nombre d'autres joueurs (sans toi)</label>
             <select id="capture-autres" class="liste-deroulante">
               <option value="auto">Automatique</option>
               <option value="1">1 autre joueur</option>
@@ -239,8 +246,8 @@
               <option value="onglet">dans un onglet de Chrome ou Edge</option>
             </select>
             <p class="petit">
-              Indiquez le nombre exact d'autres joueurs : « Automatique » en trouve souvent trop.
-              Votre voix, captée à part, est toujours reconnue.
+              Indique le nombre exact d'autres joueurs : « Automatique » en trouve souvent trop.
+              Ta voix, captée à part, est toujours reconnue.
             </p>
             <ol id="capture-etapes" class="etapes"></ol>
             <details class="conseils">
@@ -249,10 +256,10 @@
               <ul>
                 <li>
                   <strong>Un casque est indispensable</strong> : sans casque, la voix des autres sort du
-                  haut-parleur, entre dans votre micro et apparaît en double, à votre nom.
+                  haut-parleur, entre dans ton micro et apparaît en double, à ton nom.
                 </li>
-                <li>Faites un essai d'une minute avant la séance, puis écoutez les deux pistes (.wav).</li>
-                <li>Demandez à chaque joueur de dire son prénom au début : renommer sera plus facile.</li>
+                <li>Fais un essai d'une minute avant la séance, puis écoute les deux pistes (.wav).</li>
+                <li>Demande à chaque joueur de dire son prénom au début : renommer sera plus facile.</li>
               </ul>
               <h3>Discord (Paramètres utilisateur, roue dentée)</h3>
               <ul>
@@ -266,10 +273,10 @@
                   souvent le début des phrases).
                 </li>
                 <li>
-                  Clic droit sur chaque joueur → <strong>Volume de l'utilisateur</strong> : réglez pour que
+                  Clic droit sur chaque joueur → <strong>Volume de l'utilisateur</strong> : règle pour que
                   tout le monde s'entende au même niveau.
                 </li>
-                <li>Notifications → Sons : <strong>désactivez les sons</strong> (arrivées, départs, messages) : ils seraient enregistrés.</li>
+                <li>Notifications → Sons : <strong>désactive les sons</strong> (arrivées, départs, messages) : ils seraient enregistrés.</li>
                 <li>Musique d'ambiance (bot) : <strong>volume bas</strong> (clic droit → volume) : la musique gêne la reconnaissance.</li>
                 <li>
                   Pour le propriétaire du serveur : Modifier le salon vocal → <strong>Débit binaire au
@@ -278,14 +285,14 @@
               </ul>
               <h3>Windows</h3>
               <ul>
-                <li>Paramètres → Système → Son : sortie <strong>et</strong> entrée réglées sur votre casque.</li>
+                <li>Paramètres → Système → Son : sortie <strong>et</strong> entrée réglées sur ton casque.</li>
                 <li>
                   Paramètres → Système → Alimentation : mise en veille sur <strong>« Jamais »</strong> pendant
                   la partie, et l'ordinateur portable branché sur le secteur.
                 </li>
                 <li>
-                  « Écran entier » capte <strong>tous</strong> les sons de l'ordinateur : fermez YouTube,
-                  jeux et musique, et activez « Ne pas déranger » pour les notifications.
+                  « Écran entier » capte <strong>tous</strong> les sons de l'ordinateur : ferme YouTube,
+                  jeux et musique, et active « Ne pas déranger » pour les notifications.
                 </li>
               </ul>
               <h3>Transcrire une longue séance</h3>
@@ -293,8 +300,8 @@
                 <li>Réglages → Vitesse de calcul : <strong>« Maximale »</strong> (un ordinateur le supporte bien).</li>
                 <li>Qualité « Équilibré + » (plus rapide) ou « Précis » (texte plus juste, plus lent).</li>
                 <li>
-                  Comptez à peu près la durée de la partie, parfois plus : lancez-la par exemple le soir.
-                  Vous pouvez l'arrêter et la reprendre plus tard, elle repart là où elle s'est arrêtée.
+                  Compte à peu près la durée de la partie, parfois plus : lance-la par exemple le soir.
+                  Tu peux l'arrêter et la reprendre plus tard, elle repart là où elle s'est arrêtée.
                 </li>
               </ul>
             </details>
@@ -303,7 +310,7 @@
               <ul>
                 <li>
                   <strong>Voix qui se chevauchent</strong> parmi les autres joueurs : une seule voix est
-                  retenue et du texte peut manquer. (Votre voix, sur sa propre piste, n'est jamais mélangée.)
+                  retenue et du texte peut manquer. (Ta voix, sur sa propre piste, n'est jamais mélangée.)
                 </li>
                 <li>
                   <strong>Discord transforme les voix</strong> (réduction de bruit, compression) : le texte
@@ -314,8 +321,8 @@
                   (voix robotique, coupures) font perdre des mots.
                 </li>
                 <li>
-                  Les numéros « Intervenant 1, 2… » changent d'une séance à l'autre : renommez-les après
-                  chaque transcription, et corrigez les erreurs avec « Corriger qui parle ».
+                  Les numéros « Intervenant 1, 2… » changent d'une séance à l'autre : renomme-les après
+                  chaque transcription, et corrige les erreurs avec « Corriger qui parle ».
                 </li>
                 <li>Les réponses très courtes (« oui », « d'accord ») sont plus souvent mal attribuées.</li>
               </ul>
@@ -336,7 +343,7 @@
               <strong id="capture-chrono" aria-live="off">00:00</strong>
             </p>
             <div class="niveau">
-              <label for="niveau-micro">🎙️ <span id="niveau-micro-nom">Moi</span> (votre micro)</label>
+              <label for="niveau-micro">🎙️ <span id="niveau-micro-nom">Moi</span> (ton micro)</label>
               <progress id="niveau-micro" class="niveau__barre" max="100" value="0"></progress>
               <p id="niveau-micro-etat" class="petit"></p>
             </div>
@@ -359,8 +366,8 @@
               </button>
             </div>
             <p class="petit">
-              Vous pouvez passer sur Discord : la capture continue en arrière-plan.
-              Ne fermez pas cet onglet et ne mettez pas l'ordinateur en veille.
+              Tu peux passer sur Discord : la capture continue en arrière-plan.
+              Ne ferme pas cet onglet et ne mets pas l'ordinateur en veille.
             </p>
           </div>
 
@@ -383,10 +390,10 @@
           du Code pénal). C'est aussi une question de confiance entre joueurs.
         </p>
         <ul>
-          <li>Prévenez <strong>tous</strong> les joueurs que la partie sera enregistrée et transcrite.</li>
-          <li>Vérifiez que chacun est d'accord.</li>
+          <li>Préviens <strong>tous</strong> les joueurs que la partie sera enregistrée et transcrite.</li>
+          <li>Vérifie que chacun est d'accord.</li>
           <li>
-            Conseil : annoncez-le au début de l'enregistrement (« On enregistre la partie,
+            Conseil : annonce-le au début de l'enregistrement (« On enregistre la partie,
             tout le monde est d'accord ? ») : l'accord de chacun sera dans l'enregistrement.
           </li>
           <li>L'enregistrement reste sur cet ordinateur : rien n'est envoyé sur internet.</li>
@@ -490,6 +497,11 @@
       <details class="carte reglages" id="reglages">
         <summary><h2>⚙️ Réglages</h2></summary>
 
+        <fieldset id="choix-theme">
+          <legend>Thème d'affichage</legend>
+          <!-- Rempli par js/interface/reglages.js -->
+        </fieldset>
+
         <fieldset id="choix-qualite">
           <legend>Qualité de la transcription</legend>
           <!-- Rempli par js/interface/reglages.js -->
@@ -517,22 +529,36 @@
         </div>
         <p id="reglages-message" class="message" role="status" hidden></p>
 
-        <!-- À propos : qui a conçu l'application, et un lien discret vers les
-             autres projets (ouvert dans un nouvel onglet, pour ne pas quitter
-             l'application ni interrompre une transcription en cours). -->
+        <!-- À propos : identité Omni, version unique (js/version.js), confidentialité, licences et contact. -->
         <h3>À propos</h3>
-        <p>Cette application a été conçue et développée par Ferrus Dantioch, avec l'aide de l'intelligence artificielle.</p>
-        <p class="petit a-propos-lien">Voir d'autres projets : <a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener noreferrer">https://ferrusdantioch.github.io/omni-systeme/</a></p>
+        <div class="a-propos-entete">
+          <img
+            class="a-propos-logo"
+            src="./assets/logo-omni-systeme.webp"
+            width="80"
+            height="80"
+            alt="Logo de l'Omni-système : un dé à vingt faces violet entouré d'un anneau lumineux"
+          />
+          <div>
+            <strong>Omni-Transcripteur</strong>
+            <p class="petit">Version <span id="app-version">—</span></p>
+          </div>
+        </div>
+        <p>Application réalisée par Ferrus Dantioch, avec l'aide de l'intelligence artificielle.</p>
+        <p class="petit">Tes enregistrements et transcriptions restent sur cet appareil. Aucun compte, aucune donnée envoyée.</p>
         <!-- Licence du code : texte complet dans le fichier LICENSE du dépôt. -->
         <p class="petit a-propos-lien">© 2026 Ferrus Dantioch — <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr" target="_blank" rel="noopener noreferrer">Creative Commons BY-NC-ND 4.0</a> : partage autorisé en citant l'auteur, sans usage commercial ni modification.</p>
+        <!-- Licences des bibliothèques et modèles embarqués (Transformers.js, ONNX Runtime, pyannote, WeSpeaker). -->
+        <p class="petit a-propos-lien">Bibliothèques et modèles tiers : <a href="./licences-tierces.txt" target="_blank" rel="noopener">voir les licences</a>.</p>
         <!-- Retours : une adresse-alias (Proton) créée pour ça. Le lien ouvre seulement
              l'application de messagerie, adresse et sujet déjà remplis : rien ne part tout seul. -->
-        <p class="petit a-propos-lien">Une idée, une remarque, un souci ? Vos retours sont les bienvenus : <a href="mailto:omni-systeme.choking513@passmail.net?subject=Retour%20sur%20Omni-Transcripteur">omni-systeme.choking513@passmail.net</a></p>
+        <p class="petit a-propos-lien">Une idée, une remarque, un souci ? Tes retours sont les bienvenus : <a href="mailto:omni-systeme.choking513@passmail.net?subject=Retour%20sur%20Omni-Transcripteur">omni-systeme.choking513@passmail.net</a></p>
+        <p class="petit a-propos-lien"><a href="https://ferrusdantioch.github.io/omni-systeme/" target="_blank" rel="noopener noreferrer">Découvrir l'Omni-système</a></p>
         <!-- Note d'installation : Chrome Android n'installe qu'une seule
              application par adresse de site, et toutes les applications de
              ferrusdantioch.github.io partagent la même. Masquée une fois
              l'application installée (règle .note-installation de la feuille de style). -->
-        <p class="petit note-installation"><strong>Installation sur Android&nbsp;:</strong> si Chrome indique «&nbsp;Cette appli est déjà installée&nbsp;» alors qu'elle ne l'est pas, c'est une limite de Chrome quand une autre application de ce site est déjà installée. Utilisez un autre navigateur (Brave, par exemple), ou choisissez «&nbsp;Créer un raccourci&nbsp;».</p>
+        <p class="petit note-installation"><strong>Installation sur Android&nbsp;:</strong> si Chrome indique «&nbsp;Cette appli est déjà installée&nbsp;» alors qu'elle ne l'est pas, c'est une limite de Chrome quand une autre application de ce site est déjà installée. Utilise un autre navigateur (Brave, par exemple), ou choisis «&nbsp;Créer un raccourci&nbsp;».</p>
       </details>
 
       <!-- Caché par défaut ; il apparaît seulement si le navigateur
