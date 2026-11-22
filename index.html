@@ -141,19 +141,19 @@
               🎙️ Enregistrer avec le micro
             </button>
             <button type="button" class="bouton" id="bouton-fichier" disabled>
-              📁 Choisir un fichier audio
+              📁 Choisir un fichier audio ou vidéo
             </button>
             <!-- Champ caché : le bouton ci-dessus l'ouvre -->
             <input
               type="file"
               id="champ-fichier"
-              accept="audio/*,.mp3,.wav,.m4a,.ogg,.oga,.opus,.webm,.aac,.flac"
+              accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.oga,.opus,.webm,.aac,.flac,.mp4,.mov,.mkv,.m4v"
               hidden
             />
           </div>
           <p id="aide-transcription" class="note">Le modèle doit d'abord être téléchargé (voir ci-dessus).</p>
           <p id="aide-depot" class="note aide-depot" hidden>
-            Astuce : sur ordinateur, tu peux aussi glisser-déposer un fichier audio sur cette carte.
+            Astuce : sur ordinateur, tu peux aussi glisser-déposer un fichier audio ou vidéo sur cette carte.
           </p>
           <div id="zone-dernier-audio" class="zone-dernier-audio" hidden>
             <button type="button" class="bouton bouton--petit bouton--discret" id="bouton-telecharger-audio">
@@ -471,7 +471,37 @@
         <div class="boutons boutons--ligne">
           <button type="button" class="bouton" id="bouton-copier">📋 Copier</button>
           <button type="button" class="bouton" id="bouton-telecharger-txt">💾 Télécharger (.txt)</button>
+          <button
+            type="button"
+            class="bouton"
+            id="bouton-exports"
+            aria-expanded="false"
+            aria-controls="zone-exports"
+          >
+            🎬 Sous-titres &amp; formats
+          </button>
           <button type="button" class="bouton bouton--discret" id="bouton-effacer">🧹 Effacer</button>
+        </div>
+        <div id="zone-exports" class="zone-exports" hidden>
+          <div class="choix choix--compact">
+            <input type="checkbox" id="export-horodatages" checked />
+            <label for="export-horodatages">Inclure les horodatages (Copier, .txt, .md)</label>
+          </div>
+          <div class="choix choix--compact" id="export-intervenants-ligne" hidden>
+            <input type="checkbox" id="export-intervenants" checked />
+            <label for="export-intervenants">Inclure le nom des intervenants dans les sous-titres</label>
+          </div>
+          <div class="boutons boutons--ligne">
+            <button type="button" class="bouton bouton--petit" id="bouton-telecharger-srt">
+              🎬 Sous-titres (.srt)
+            </button>
+            <button type="button" class="bouton bouton--petit" id="bouton-telecharger-vtt">
+              🌐 Sous-titres (.vtt)
+            </button>
+            <button type="button" class="bouton bouton--petit" id="bouton-telecharger-md">
+              📝 Markdown (.md)
+            </button>
+          </div>
         </div>
         <p id="resultat-message" class="message" role="status" hidden></p>
       </section>

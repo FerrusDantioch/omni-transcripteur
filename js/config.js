@@ -138,8 +138,8 @@ export const LANGUES = [
 
 export const LANGUE_PAR_DEFAUT = "fr";
 
-// Formats audio acceptés à l'import (affichés dans les messages)
-export const FORMATS_ACCEPTES = "MP3, WAV, M4A, OGG";
+// Formats audio et vidéo acceptés à l'import (affichés dans les messages)
+export const FORMATS_ACCEPTES = "MP3, WAV, M4A, OGG, MP4, WebM, MOV";
 
 // Whisper travaille sur de l'audio à 16 000 échantillons par seconde
 export const FREQUENCE_AUDIO = 16000;

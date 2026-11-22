@@ -69,6 +69,7 @@ const FICHIERS_APPLICATION = [
   "./js/capture/transcrire-capture.js",
   "./js/outils/anti-veille.js",
   "./js/outils/edition-texte.js",
+  "./js/outils/export-texte.js",
   "./js/outils/format.js",
   "./vendor/transformers/transformers.min.js",
   "./vendor/transformers/ort-wasm-simd-threaded.asyncify.mjs",

@@ -541,12 +541,22 @@ legend {
   margin-bottom: 0.75rem;
 }
 
-.zone-recherche {
+.zone-recherche,
+.zone-exports {
   margin-bottom: 0.75rem;
   padding: 0.75rem;
   border: 1px dashed var(--bordure);
   border-radius: 0.75rem;
   background: var(--fond);
+}
+
+.zone-exports {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+.zone-exports .boutons {
+  margin-top: 0.5rem;
 }
 
 .zone-recherche .champ-texte {

@@ -11,16 +11,17 @@
 
 > **Application en ligne :** <https://ferrusdantioch.github.io/omni-transcripteur/>
 >
-> **État actuel :** étapes 1 et 2 en place : transcription (micro ou fichier),
-> reconnaissance des intervenants (renommer, fusionner, corriger), édition du
-> texte et rechercher/remplacer, sauvegarde de l'historique (`.json`), et
-> **Mode JDR** avec capture d'une session Discord en direct sur ordinateur.
+> **État actuel :** étapes 1, 2 et 3 en place : transcription (micro, fichier audio
+> ou vidéo), reconnaissance des intervenants (renommer, fusionner, corriger), édition
+> du texte et rechercher/remplacer, sous-titres vidéo (`.srt` et `.vtt`), export
+> Markdown (`.md`), sauvegarde de l'historique (`.json`), et **Mode JDR** avec
+> capture d'une session Discord en direct sur ordinateur.
 
 ## Feuille de route
 
 1. Transcrire une voix (micro ou fichier audio). ✅
 2. Reconnaître jusqu'à 6 voix différentes (« Intervenant 1 », « Intervenant 2 »…). ✅
-3. Générer des sous-titres pour des vidéos (`.srt` et `.vtt`).
+3. Générer des sous-titres pour des vidéos (`.srt` et `.vtt`). ✅
 4. Publier l'application sur le Google Play Store.
 
 ## Petit lexique
@@ -67,9 +68,9 @@ Le micro ne fonctionne que sur une adresse sécurisée (`https://`) ou sur `loca
 - **Thèmes d'affichage** : Omni (violet nuit), Automatique, Sombre ou Clair, sans éclair au chargement.
 - **Mémoire économisée** : le modèle ne se charge en mémoire qu'au moment de transcrire (pendant l'enregistrement au micro, il se charge en arrière-plan), et il est libéré après 5 minutes sans servir.
 - **Micro amélioré** : barre de niveau sonore en direct, pause / reprise, chronomètre et téléchargement du dernier enregistrement pour ne jamais perdre une prise.
-- **Fichier audio** (MP3, WAV, M4A, OGG…) : sélecteur de fichier, glisser-déposer sur ordinateur et partage depuis une autre appli sur Android (*Web Share Target*).
+- **Fichier audio ou vidéo** (MP3, WAV, M4A, OGG, MP4, WebM, MOV…) : sélecteur de fichier, glisser-déposer sur ordinateur et partage depuis une autre appli sur Android (*Web Share Target*).
 - Audios longs **découpés en morceaux d'environ 28 s**, coupés dans les silences, avec 1 s de chevauchement.
-- Résultat **horodaté par phrase**, boutons **Copier**, **Télécharger (.txt)**, **Modifier le texte**, **Rechercher / Remplacer**, **Effacer**.
+- Résultat **horodaté par phrase**, boutons **Copier**, **Télécharger (.txt)** (avec ou sans horodatages), **Sous-titres vidéo (.srt et .vtt)**, **Markdown (.md)**, **Modifier le texte**, **Rechercher / Remplacer**, **Effacer**.
 - **Historique** sur l'appareil : ouvrir, renommer, supprimer, **sauvegarder et importer en `.json`**.
 - **Reconnaissance des intervenants** (interrupteur) : le texte est présenté par blocs « Intervenant 1 », « Intervenant 2 »… (couleur + nom), jusqu'à 6 voix. Nombre de personnes : automatique ou de 2 à 6 (plus fiable). Modèles de voix ≈ 32 Mo, téléchargés une fois. En cas d'échec, le texte est gardé sans distinction de voix.
 - **Édition des intervenants** : **Renommer** partout d'un coup, **Fusionner** deux intervenants en un clic, et **Corriger qui parle** phrase par phrase sans perte de position.

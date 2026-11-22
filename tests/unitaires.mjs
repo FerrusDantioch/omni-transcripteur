@@ -40,6 +40,14 @@ import {
   normaliserTranscriptionImportee,
 } from "../js/outils/edition-texte.js";
 import { extensionPourMime } from "../js/audio/enregistreur.js";
+import {
+  formaterTempsSousTitre,
+  preparerSousTitres,
+  enSrt,
+  enVtt,
+  enMarkdown,
+  enTexteBrut,
+} from "../js/outils/export-texte.js";
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -362,5 +370,68 @@ describe("Édition et sauvegarde (js/outils/edition-texte.js)", () => {
     assert.equal(extensionPourMime("audio/mp4"), "m4a");
     assert.equal(extensionPourMime("audio/wav"), "wav");
     assert.equal(extensionPourMime(""), "webm");
+  });
+});
+
+// ------------------------------------------------------------
+// 9. Exports sous-titres (.srt, .vtt), Markdown (.md) et texte (.txt)
+// ------------------------------------------------------------
+describe("Exports sous-titres et formats (js/outils/export-texte.js)", () => {
+  const exemple = {
+    titre: "Épisode 1",
+    creeLe: 1760000000000,
+    duree: 12.5,
+    langue: "fr",
+    qualite: "precis",
+    intervenants: [{ nom: "Marie" }, { nom: "Paul" }],
+    phrases: [
+      { debut: 0, fin: 3.456, texte: "Bonjour à tous !", intervenant: 0 },
+      {
+        debut: 3.2, // léger chevauchement volontaire pour tester le recalage
+        fin: 10.5,
+        texte:
+          "Voici une phrase volontairement très longue afin de vérifier que le découpage en sous-titres reste toujours lisible sur deux lignes de quarante-deux caractères au maximum.",
+        intervenant: 1,
+      },
+    ],
+  };
+
+  it("formate les temps de sous-titres sans dépassement de millisecondes", () => {
+    assert.equal(formaterTempsSousTitre(0, ","), "00:00:00,000");
+    assert.equal(formaterTempsSousTitre(83.456, ","), "00:01:23,456");
+    assert.equal(formaterTempsSousTitre(59.9999, "."), "00:01:00.000");
+    assert.equal(formaterTempsSousTitre(3661.5, ","), "01:01:01,500");
+  });
+
+  it("découpe les longues phrases en sous-titres équilibrés sans chevauchement", () => {
+    const cues = preparerSousTitres(exemple, { inclureIntervenants: true });
+    assert.ok(cues.length >= 3, `Attendu au moins 3 sous-titres, obtenu ${cues.length}`);
+    for (let i = 0; i < cues.length; i++) {
+      const lignes = cues[i].texte.split("\n");
+      assert.ok(lignes.length <= 2, `Trop de lignes : ${lignes.length}`);
+      for (const l of lignes) assert.ok(l.length <= 42, `Ligne trop longue (${l.length}) : ${l}`);
+      assert.ok(cues[i].fin > cues[i].debut);
+      if (i > 0) assert.ok(cues[i].debut >= cues[i - 1].fin, "Deux sous-titres se chevauchent");
+    }
+  });
+
+  it("génère des fichiers .srt et .vtt conformes avec option intervenants", () => {
+    const srt = enSrt(exemple, { inclureIntervenants: true });
+    assert.ok(srt.startsWith("1\n00:00:00,000 --> 00:00:03,456\nMarie : Bonjour à tous !"));
+
+    const vttSansVoix = enVtt(exemple, { inclureIntervenants: false });
+    assert.ok(vttSansVoix.startsWith("WEBVTT\n\n00:00:00.000 --> 00:00:03.456\nBonjour à tous !"));
+    assert.ok(!vttSansVoix.includes("Marie :"));
+  });
+
+  it("génère du Markdown (.md) et du texte brut (.txt) avec ou sans horodatages", () => {
+    const md = enMarkdown(exemple, { avecHorodatages: true });
+    assert.ok(md.startsWith("# Épisode 1\n"));
+    assert.ok(md.includes("**Marie** *(00:00)*"));
+    assert.ok(md.includes("**Paul** *(00:03)*"));
+
+    const txtSansHeure = enTexteBrut(exemple, { avecEntete: false, avecHorodatages: false });
+    assert.ok(!txtSansHeure.includes("[00:00]"));
+    assert.ok(txtSansHeure.startsWith("Marie : Bonjour à tous !"));
   });
 });

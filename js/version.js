@@ -8,4 +8,4 @@
 // mise à jour sur tous les appareils.
 // ==========================================================
 
-self.VERSION_APP = "1.1.0";
+self.VERSION_APP = "1.2.0";

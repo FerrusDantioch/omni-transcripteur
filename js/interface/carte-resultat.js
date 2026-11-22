@@ -5,13 +5,19 @@
 // on peut renommer les intervenants ou corriger qui parle.
 // ==========================================================
 
-import { LANGUES, QUALITES } from "../config.js";
-import { formaterHorodatage, formaterDuree, formaterDate, nomDeFichier } from "../outils/format.js";
+import { formaterHorodatage, nomDeFichier } from "../outils/format.js";
 import {
   fusionnerIntervenants,
   compterOccurrences,
   remplacerDansPhrases,
 } from "../outils/edition-texte.js";
+import {
+  decrireTranscription,
+  enTexteBrut,
+  enMarkdown,
+  enSrt,
+  enVtt,
+} from "../outils/export-texte.js";
 import { afficherMessage, cacherMessage } from "./messages.js";
 import { demanderConfirmation, demanderFusion } from "./fenetres.js";
 import {
@@ -50,6 +56,14 @@ export function creerCarteResultat({ surModification }) {
   const zoneTexte = $("resultat-texte");
   const boutonCopier = $("bouton-copier");
   const boutonTelecharger = $("bouton-telecharger-txt");
+  const boutonExports = $("bouton-exports");
+  const zoneExports = $("zone-exports");
+  const caseHorodatages = $("export-horodatages");
+  const ligneExportIntervenants = $("export-intervenants-ligne");
+  const caseExportIntervenants = $("export-intervenants");
+  const boutonSrt = $("bouton-telecharger-srt");
+  const boutonVtt = $("bouton-telecharger-vtt");
+  const boutonMd = $("bouton-telecharger-md");
   const boutonEffacer = $("bouton-effacer");
   const message = $("resultat-message");
 
@@ -58,9 +72,21 @@ export function creerCarteResultat({ surModification }) {
   let enEditionTexte = false; // mode « Modifier le texte »
   let enCoursActuel = false;
 
+  function telechargerTexte(contenu, extension, typeMime, libelle) {
+    const fichier = new Blob([contenu], { type: `${typeMime};charset=utf-8` });
+    const lien = document.createElement("a");
+    lien.href = URL.createObjectURL(fichier);
+    lien.download = nomDeFichier(transcriptionAffichee.titre, extension);
+    lien.click();
+    setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
+    afficherMessage(message, `✓ ${libelle} enregistré dans tes téléchargements.`, "succes");
+  }
+
   boutonCopier.addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(enTexteBrut(transcriptionAffichee, false));
+      await navigator.clipboard.writeText(
+        enTexteBrut(transcriptionAffichee, { avecEntete: false, avecHorodatages: caseHorodatages.checked })
+      );
       afficherMessage(message, "✓ Texte copié. Tu peux le coller où tu veux.", "succes");
     } catch {
       afficherMessage(message, "La copie n'a pas fonctionné. Sélectionne le texte à la main.", "erreur");
@@ -68,14 +94,32 @@ export function creerCarteResultat({ surModification }) {
   });
 
   boutonTelecharger.addEventListener("click", () => {
-    const contenu = enTexteBrut(transcriptionAffichee, true);
-    const fichier = new Blob([contenu], { type: "text/plain;charset=utf-8" });
-    const lien = document.createElement("a");
-    lien.href = URL.createObjectURL(fichier);
-    lien.download = nomDeFichier(transcriptionAffichee.titre, "txt");
-    lien.click();
-    setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
-    afficherMessage(message, "✓ Fichier enregistré dans tes téléchargements.", "succes");
+    const contenu = enTexteBrut(transcriptionAffichee, {
+      avecEntete: true,
+      avecHorodatages: caseHorodatages.checked,
+    });
+    telechargerTexte(contenu, "txt", "text/plain", "Fichier texte (.txt)");
+  });
+
+  boutonExports.addEventListener("click", () => {
+    const ouvrir = zoneExports.hidden;
+    zoneExports.hidden = !ouvrir;
+    boutonExports.setAttribute("aria-expanded", String(ouvrir));
+  });
+
+  boutonSrt.addEventListener("click", () => {
+    const contenu = enSrt(transcriptionAffichee, { inclureIntervenants: caseExportIntervenants.checked });
+    telechargerTexte(contenu, "srt", "application/x-subrip", "Sous-titres (.srt)");
+  });
+
+  boutonVtt.addEventListener("click", () => {
+    const contenu = enVtt(transcriptionAffichee, { inclureIntervenants: caseExportIntervenants.checked });
+    telechargerTexte(contenu, "vtt", "text/vtt", "Sous-titres (.vtt)");
+  });
+
+  boutonMd.addEventListener("click", () => {
+    const contenu = enMarkdown(transcriptionAffichee, { avecHorodatages: caseHorodatages.checked });
+    telechargerTexte(contenu, "md", "text/markdown", "Fichier Markdown (.md)");
   });
 
   boutonEffacer.addEventListener("click", () => {
@@ -179,6 +223,8 @@ export function creerCarteResultat({ surModification }) {
     enEditionTexte = false;
     enCoursActuel = false;
     fermerRecherche();
+    zoneExports.hidden = true;
+    boutonExports.setAttribute("aria-expanded", "false");
     zoneTexte.replaceChildren();
     zoneIntervenants.replaceChildren();
     barreOutils.hidden = true;
@@ -239,16 +285,19 @@ export function creerCarteResultat({ surModification }) {
       enCorrection = false;
       enEditionTexte = false;
       fermerRecherche();
+      zoneExports.hidden = true;
+      boutonExports.setAttribute("aria-expanded", "false");
     }
     transcriptionAffichee = transcription;
     enCoursActuel = enCours;
     carte.hidden = false;
     titre.textContent = transcription.titre;
-    infos.textContent = decrire(transcription) + (enCours ? " · transcription en cours…" : "");
+    infos.textContent = decrireTranscription(transcription) + (enCours ? " · transcription en cours…" : "");
 
     // Liste des intervenants (renommer, fusionner, corriger) : seulement une fois le texte terminé
     const modifiableIntervenants = avecIntervenants(transcription) && !enCours;
     zoneIntervenants.hidden = !modifiableIntervenants;
+    ligneExportIntervenants.hidden = !modifiableIntervenants;
     zoneIntervenants.replaceChildren(
       ...(modifiableIntervenants
         ? [
@@ -275,6 +324,11 @@ export function creerCarteResultat({ surModification }) {
     const desactive = enCours || transcription.phrases.length === 0;
     boutonCopier.disabled = desactive;
     boutonTelecharger.disabled = desactive;
+    boutonExports.disabled = desactive;
+    if (desactive) {
+      zoneExports.hidden = true;
+      boutonExports.setAttribute("aria-expanded", "false");
+    }
     boutonEffacer.disabled = enCours;
     cacherMessage(message);
   }
@@ -327,7 +381,7 @@ export function creerCarteResultat({ surModification }) {
       // Mise à jour directe : instantanée même sur des milliers de phrases, focus conservé
       ligneEl.style.setProperty("--couleur-voix", couleurIntervenant(phrase.intervenant));
       majCompteursLegende(zoneIntervenants, t);
-      infos.textContent = decrire(t);
+      infos.textContent = decrireTranscription(t);
     }
     await enregistrer(`✓ Phrase attribuée à « ${nomIntervenant(t, phrase.intervenant)} ».`);
   }
@@ -446,30 +500,4 @@ function creerBlocs(t, phrases = t.phrases) {
     courant.bloc.append(creerLigne(phrase));
   }
   return blocs;
-}
-
-// Ligne d'informations : date · durée · langue · qualité · intervenants
-function decrire(t) {
-  const langue = LANGUES.find((l) => l.code === t.langue)?.nom ?? t.langue;
-  const parties = [formaterDate(t.creeLe), formaterDuree(t.duree), langue];
-  if (QUALITES[t.qualite]) parties.push(`qualité ${QUALITES[t.qualite].nom}`);
-  if (avecIntervenants(t)) {
-    // On ne compte que les intervenants qui ont au moins une phrase
-    const n = new Set(t.phrases.map((p) => p.intervenant ?? 0)).size;
-    parties.push(`${n} intervenant${n > 1 ? "s" : ""}`);
-  }
-  if (t.interrompue) parties.push("interrompue");
-  return parties.join(" · ");
-}
-
-// Version texte simple (pour copier ou télécharger)
-function enTexteBrut(transcription, avecEntete) {
-  const voix = avecIntervenants(transcription);
-  const lignes = transcription.phrases.map((p) =>
-    voix
-      ? `[${formaterHorodatage(p.debut)}] ${nomIntervenant(transcription, p.intervenant ?? 0)} : ${p.texte}`
-      : `[${formaterHorodatage(p.debut)}] ${p.texte}`
-  );
-  if (!avecEntete) return lignes.join("\n");
-  return [transcription.titre, decrire(transcription), "", ...lignes, ""].join("\n");
 }
