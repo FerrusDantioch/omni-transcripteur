@@ -7,7 +7,7 @@
 
 import { enregistrerServiceWorker } from "./pwa/register-service-worker.js";
 import { preparerBoutonInstallation } from "./pwa/install-button.js";
-import { QUALITES, FREQUENCE_AUDIO, nombreDeCoeurs } from "./config.js";
+import { QUALITES, LANGUES, FREQUENCE_AUDIO, nombreDeCoeurs } from "./config.js";
 import { lireReglages, enregistrerReglages } from "./stockage/reglages.js";
 import { ajouterTranscription, mettreAJourTranscription } from "./stockage/historique.js";
 import { MoteurTranscription } from "./transcription/client-moteur.js";
@@ -291,6 +291,9 @@ const carteHistorique = creerCarteHistorique({
     carteResultat.afficher(transcription);
     carteResultat.montrer();
   },
+  surRenommage: (id, nouveauTitre) => {
+    if (carteResultat.idAffiche === id) carteResultat.majTitre(nouveauTitre);
+  },
   surSuppression: (id) => {
     if (carteResultat.idAffiche === id) carteResultat.effacer();
   },
@@ -316,6 +319,7 @@ const interfaceReglages = creerReglages({
     await effacerTousLesTelechargements();
     progression = { recu: 0, total: 0 };
     verifierModele();
+    if (reglages.intervenants) verifierModelesVoix();
   },
 });
 
@@ -481,7 +485,20 @@ async function traiterCapture(fiche) {
     document.getElementById("carte-modele").scrollIntoView({ behavior: reduire ? "auto" : "smooth" });
     return;
   }
-  if (fiche.transcription?.id && !fiche.avancement) {
+  if (fiche.avancement) {
+    const memeReglages = fiche.avancement.langue === reglages.langue && fiche.avancement.qualite === reglages.qualite;
+    if (!memeReglages) {
+      const nomLangue = LANGUES.find((l) => l.code === fiche.avancement.langue)?.nom ?? fiche.avancement.langue;
+      const nomQualite = QUALITES[fiche.avancement.qualite]?.nom ?? fiche.avancement.qualite;
+      const ok = confirm(
+        `Une transcription est déjà commencée (${nomLangue}, qualité « ${nomQualite} »). ` +
+          "Vos réglages actuels sont différents : continuer effacera cet avancement et repartira du début. " +
+          "Pour reprendre là où vous vous êtes arrêté, remettez cette langue et cette qualité.\n\n" +
+          "Repartir du début quand même ?"
+      );
+      if (!ok) return;
+    }
+  } else if (fiche.transcription?.id) {
     if (!confirm("Cette capture a déjà été transcrite. La transcrire à nouveau (par exemple avec une autre qualité) ?")) return;
   }
   commencerTravail();

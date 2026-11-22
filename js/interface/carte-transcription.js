@@ -94,6 +94,7 @@ export function creerCarteTranscription({
       traitementBarre.removeAttribute("value");
       traitementDetail.textContent = "";
       boutonArreterTranscription.hidden = true;
+      boutonArreterTranscription.disabled = false;
     },
 
     // Le modèle se charge encore en mémoire

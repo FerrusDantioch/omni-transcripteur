@@ -176,6 +176,13 @@ export function creerCarteResultat({ surModification }) {
       return transcriptionAffichee?.id;
     },
 
+    // Met à jour le titre si la transcription affichée est renommée dans l'historique
+    majTitre(nouveauTitre) {
+      if (!transcriptionAffichee) return;
+      transcriptionAffichee.titre = nouveauTitre;
+      titre.textContent = nouveauTitre;
+    },
+
     effacer,
   };
 }

@@ -14,7 +14,7 @@ import { afficherMessage, cacherMessage } from "./messages.js";
 
 const $ = (id) => document.getElementById(id);
 
-export function creerCarteHistorique({ surOuvrir, surSuppression }) {
+export function creerCarteHistorique({ surOuvrir, surRenommage, surSuppression }) {
   const liste = $("historique-liste");
   const vide = $("historique-vide");
   const message = $("historique-message");
@@ -57,7 +57,9 @@ export function creerCarteHistorique({ surOuvrir, surSuppression }) {
       creerBouton("Renommer", `Renommer « ${t.titre} »`, async () => {
         const nouveau = prompt("Nouveau nom :", t.titre);
         if (nouveau === null || !nouveau.trim()) return; // annulé
-        await renommerTranscription(t.id, nouveau.trim());
+        const titrePropre = nouveau.trim();
+        await renommerTranscription(t.id, titrePropre);
+        surRenommage?.(t.id, titrePropre);
         await rafraichir();
         afficherMessage(message, "✓ Transcription renommée.", "succes");
       }),

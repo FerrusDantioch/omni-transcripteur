@@ -146,7 +146,8 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
   async function afficherEspace() {
     try {
       const { quota, usage } = await navigator.storage.estimate();
-      const libre = quota - usage;
+      if (!Number.isFinite(quota) || !Number.isFinite(usage)) throw new Error("Estimation indisponible");
+      const libre = Math.max(0, quota - usage);
       const heures = libre / OCTETS_PAR_SECONDE / 3600;
       const possible = heures >= 10 ? "plus de 10 h" : `environ ${formaterDuree(heures * 3600)}`;
       espace.textContent =
