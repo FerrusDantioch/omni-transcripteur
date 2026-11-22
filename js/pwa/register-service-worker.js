@@ -102,7 +102,7 @@ function surveillerMisesAJour(inscription, estOccupe) {
     if (!inscription.waiting) return;
     // Recharger maintenant ferait perdre l'enregistrement ou la transcription
     if (estOccupe()) {
-      message.textContent = "Attendez la fin de l'enregistrement ou de la transcription, puis touchez à nouveau « Mettre à jour ».";
+      message.textContent = "Attends la fin de l'enregistrement ou de la transcription, puis touche à nouveau « Mettre à jour ».";
       return;
     }
     miseAJourDemandee = true;

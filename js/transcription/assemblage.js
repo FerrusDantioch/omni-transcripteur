@@ -83,6 +83,9 @@ export function regrouperEnPhrases(segments) {
   return phrases;
 }
 
+// Abréviations courantes suivies d'un point qui ne terminent pas une phrase
+const ABREVIATIONS = /(?:^|[\s(«"'])(?:M|Mr|Mme|Mlle|Dr|Pr|St|Ste|etc|cf|ex|fig|vol|ch|art|av|apr|p|pp|n|no|tel|tél|env|max|min|J\.-C)\.$|(?:^|\s)\d{1,2}\.$/i;
+
 /**
  * Découpe chaque segment en phrases (qui finissent par . ! ? …).
  * L'heure de chaque phrase est estimée d'après la longueur de son texte.
@@ -93,7 +96,7 @@ export function regrouperEnPhrases(segments) {
 export function decouperEnPhrases(segments) {
   const resultat = [];
   for (const segment of segments) {
-    const parties = segment.texte.split(/(?<=[.!?…])\s+/).filter(Boolean);
+    const parties = decouperTexteEnPhrases(segment.texte);
     const longueurTotale = parties.reduce((s, p) => s + p.length, 0) || 1;
     let instant = segment.debut;
     for (const partie of parties) {
@@ -105,6 +108,22 @@ export function decouperEnPhrases(segments) {
     }
   }
   return resultat;
+}
+
+// Découpe un texte en phrases en évitant de couper sur les abréviations (« M. Dupont »)
+// et en gardant les guillemets/parenthèses fermants attachés à leur phrase (y compris « ! »).
+function decouperTexteEnPhrases(texte) {
+  const brut = texte.split(/(?<=[.!?…](?:\s*["»”)])?)\s+(?!["»”)])/).filter(Boolean);
+  const phrases = [];
+  for (const morceau of brut) {
+    const precedente = phrases.at(-1);
+    if (precedente && ABREVIATIONS.test(precedente)) {
+      phrases[phrases.length - 1] = `${precedente} ${morceau}`;
+    } else {
+      phrases.push(morceau);
+    }
+  }
+  return phrases;
 }
 
 // Retire du début de « texte » les mots qui terminent déjà « precedent »

@@ -86,6 +86,28 @@ export const VITESSES = {
 
 export const VITESSE_PAR_DEFAUT = "douce";
 
+// Thèmes d'affichage proposés dans les réglages (palette de l'écosystème Omni)
+export const THEMES = {
+  omni: {
+    nom: "Omni (violet nuit)",
+    description: "Thème violet nuit de l'écosystème Omni, reposant pour les yeux.",
+  },
+  auto: {
+    nom: "Automatique",
+    description: "Suit le réglage clair ou sombre de ton appareil.",
+  },
+  sombre: {
+    nom: "Sombre",
+    description: "Thème sombre neutre, sans teinte violette.",
+  },
+  clair: {
+    nom: "Clair",
+    description: "Fond clair et texte très contrasté.",
+  },
+};
+
+export const THEME_PAR_DEFAUT = "omni";
+
 // Calcule le nombre de cœurs à utiliser selon la vitesse choisie
 export function nombreDeCoeurs(vitesse) {
   const coeurs = navigator.hardwareConcurrency || 2;
@@ -116,8 +138,8 @@ export const LANGUES = [
 
 export const LANGUE_PAR_DEFAUT = "fr";
 
-// Formats audio acceptés à l'import (affichés dans les messages)
-export const FORMATS_ACCEPTES = "MP3, WAV, M4A, OGG";
+// Formats audio et vidéo acceptés à l'import (affichés dans les messages)
+export const FORMATS_ACCEPTES = "MP3, WAV, M4A, OGG, MP4, WebM, MOV";
 
 // Whisper travaille sur de l'audio à 16 000 échantillons par seconde
 export const FREQUENCE_AUDIO = 16000;

@@ -15,6 +15,7 @@ import {
   OCTETS_PAR_SECONDE,
 } from "../capture/session-capture.js";
 import { demanderConsentement } from "./fenetre-consentement.js";
+import { demanderConfirmation } from "./fenetres.js";
 import { formaterHorodatage, formaterTaille, formaterDate, formaterDuree } from "../outils/format.js";
 import { texteErreur, afficherMessage, cacherMessage } from "./messages.js";
 
@@ -25,18 +26,18 @@ const SILENCE_ALERTE = 30; // secondes sans aucun son avant de prévenir
 // Étapes à suivre, selon l'endroit où Discord est ouvert
 const ETAPES = {
   application: [
-    "Mettez votre casque et rejoignez le salon vocal dans l'application Discord.",
-    "Appuyez sur « Démarrer la capture » et lisez le rappel de consentement.",
-    "Dans la fenêtre de partage de Chrome : choisissez « Écran entier », cliquez sur l'écran, " +
-      "cochez la case « Partager aussi l'audio du système » (en bas), puis « Partager ».",
-    "Vérifiez que les deux indicateurs bougent quand vous parlez et quand les autres parlent.",
+    "Mets ton casque et rejoins le salon vocal dans l'application Discord.",
+    "Appuie sur « Démarrer la capture » et lis le rappel de consentement.",
+    "Dans la fenêtre de partage de Chrome : choisis « Écran entier », clique sur l'écran, " +
+      "coche la case « Partager aussi l'audio du système » (en bas), puis « Partager ».",
+    "Vérifie que les deux indicateurs bougent quand tu parles et quand les autres parlent.",
   ],
   onglet: [
-    "Mettez votre casque et rejoignez le salon vocal dans l'onglet Discord.",
-    "Appuyez sur « Démarrer la capture » et lisez le rappel de consentement.",
-    "Dans la fenêtre de partage de Chrome : choisissez l'onglet Discord, laissez cochée la case " +
+    "Mets ton casque et rejoins le salon vocal dans l'onglet Discord.",
+    "Appuie sur « Démarrer la capture » et lis le rappel de consentement.",
+    "Dans la fenêtre de partage de Chrome : choisis l'onglet Discord, laisse cochée la case " +
       "« Partager aussi l'audio de l'onglet », puis « Partager ».",
-    "Vérifiez que les deux indicateurs bougent quand vous parlez et quand les autres parlent.",
+    "Vérifie que les deux indicateurs bougent quand tu parles et quand les autres parlent.",
   ],
 };
 
@@ -119,10 +120,10 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
         compatibilite.raison === "telephone"
           ? "Sur téléphone ou tablette, la capture en direct est impossible : Android ne permet pas " +
             "à une page web (ni même à une application) d'écouter le son de Discord. " +
-            "Utilisez ce mode sur un ordinateur, avec Chrome ou Edge. Sur le téléphone, vous pouvez " +
+            "Utilise ce mode sur un ordinateur, avec Chrome ou Edge. Sur le téléphone, tu peux " +
             "transcrire l'enregistrement d'une partie (fichier audio) avec la reconnaissance des intervenants."
           : "Ce navigateur ne permet pas de capter le son de l'ordinateur. " +
-            "Utilisez Google Chrome ou Microsoft Edge sur ordinateur.";
+            "Utilise Google Chrome ou Microsoft Edge sur ordinateur.";
       return;
     }
     zoneIncompatible.hidden = true;
@@ -133,9 +134,9 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
     // Navigateurs qui ne savent pas capter le son du système
     const avertissement = $("capture-avertissement");
     if (!compatibilite.chromium) {
-      afficherMessage(avertissement, "Ce navigateur ne sait sans doute pas capter le son de l'ordinateur : utilisez de préférence Chrome ou Edge.", "erreur");
+      afficherMessage(avertissement, "Ce navigateur ne sait sans doute pas capter le son de l'ordinateur : utilise de préférence Chrome ou Edge.", "erreur");
     } else if (compatibilite.mac) {
-      afficherMessage(avertissement, "Sur Mac, seul le son d'un onglet est sûr d'être capté : ouvrez Discord dans Chrome (discord.com/app) et choisissez « dans un onglet ».", "erreur");
+      afficherMessage(avertissement, "Sur Mac, seul le son d'un onglet est sûr d'être capté : ouvre Discord dans Chrome (discord.com/app) et choisis « dans un onglet ».", "erreur");
     } else {
       cacherMessage(avertissement);
     }
@@ -146,7 +147,8 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
   async function afficherEspace() {
     try {
       const { quota, usage } = await navigator.storage.estimate();
-      const libre = quota - usage;
+      if (!Number.isFinite(quota) || !Number.isFinite(usage)) throw new Error("Estimation indisponible");
+      const libre = Math.max(0, quota - usage);
       const heures = libre / OCTETS_PAR_SECONDE / 3600;
       const possible = heures >= 10 ? "plus de 10 h" : `environ ${formaterDuree(heures * 3600)}`;
       espace.textContent =
@@ -230,14 +232,14 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
         alerte,
         `Aucun son des autres joueurs depuis ${formaterDuree(silenceAutres)}. C'est normal si personne ne parle. ` +
           "Sinon : dans Discord, la sortie doit être « Default » (par défaut) ; dans Windows, la sortie par défaut " +
-          "doit être votre casque ; et la case « audio du système » devait être cochée (sinon : arrêtez et recommencez).",
+          "doit être ton casque ; et la case « audio du système » devait être cochée (sinon : arrête et recommence).",
         "info"
       );
     } else if (silenceMicro >= SILENCE_ALERTE) {
       afficherMessage(
         alerte,
-        `Votre micro ne capte rien depuis ${formaterDuree(silenceMicro)}. C'est normal si vous ne parlez pas. ` +
-          "Sinon : vérifiez qu'il n'est pas coupé (bouton du casque) et que c'est bien le micro par défaut de Windows.",
+        `Ton micro ne capte rien depuis ${formaterDuree(silenceMicro)}. C'est normal si tu ne parles pas. ` +
+          "Sinon : vérifie qu'il n'est pas coupé (bouton du casque) et que c'est bien le micro par défaut de Windows.",
         "info"
       );
     } else {
@@ -258,14 +260,14 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
       afficherMessage(
         alerte,
         "Le partage du son a été arrêté (bouton « Arrêter le partage » de Chrome ?). La capture continue, " +
-          "mais sans les autres joueurs. Appuyez sur « Reprendre le partage du son ».",
+          "mais sans les autres joueurs. Appuie sur « Reprendre le partage du son ».",
         "erreur"
       );
     } else if (coupures.micro) {
       afficherMessage(
         alerte,
-        "Votre micro ne répond plus (casque débranché ?). La capture continue sans votre voix. " +
-          "Rebranchez-le puis appuyez sur « Reprendre le micro ».",
+        "Ton micro ne répond plus (casque débranché ?). La capture continue sans ta voix. " +
+          "Rebranche-le puis appuie sur « Reprendre le micro ».",
         "erreur"
       );
     } else {
@@ -302,8 +304,14 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
   }
 
   // ----- Arrêter -----
-  boutonArreter.addEventListener("click", () => {
-    if (!confirm("Arrêter la capture ? L'enregistrement sera gardé sur cet ordinateur.")) return;
+  boutonArreter.addEventListener("click", async () => {
+    const ok = await demanderConfirmation({
+      titre: "Arrêter la capture ?",
+      texte: "L'enregistrement sera gardé sur cet ordinateur et tu pourras le transcrire ensuite.",
+      libelleConfirmer: "Arrêter la capture",
+      libelleAnnuler: "Continuer la capture",
+    });
+    if (!ok) return;
     terminer();
   });
 
@@ -319,7 +327,7 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
     const duree = fiche ? formaterDuree(fiche.echantillons / FREQUENCE_AUDIO) : "";
     afficherMessage(
       message,
-      texte ?? `✓ Capture enregistrée (${duree}). Elle apparaît ci-dessous : vous pouvez la transcrire maintenant ou plus tard.`,
+      texte ?? `✓ Capture enregistrée (${duree}). Elle apparaît ci-dessous : tu peux la transcrire maintenant ou plus tard.`,
       type ?? "succes"
     );
     surFinCapture(fiche);

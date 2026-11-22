@@ -21,6 +21,7 @@ import {
   finDeTransaction,
   TIROIR_TRANSCRIPTIONS,
 } from "./base-de-donnees.js";
+import { normaliserTranscriptionImportee } from "../outils/edition-texte.js";
 
 // Ajoute une transcription et renvoie son numéro
 export async function ajouterTranscription(transcription) {
@@ -73,4 +74,56 @@ export async function supprimerTranscription(id) {
   const transaction = base.transaction(TIROIR_TRANSCRIPTIONS, "readwrite");
   transaction.objectStore(TIROIR_TRANSCRIPTIONS).delete(id);
   await finDeTransaction(transaction);
+}
+
+// Prépare un objet JSON prêt à être sauvegardé sur l'appareil
+export async function exporterHistorique() {
+  const transcriptions = await listerTranscriptions();
+  return {
+    application: "omni-transcripteur",
+    version: 1,
+    exporteLe: Date.now(),
+    transcriptions: transcriptions.map(({ id, ...reste }) => reste),
+  };
+}
+
+// Importe des transcriptions depuis une sauvegarde JSON sans écraser l'existant.
+// Les transcriptions déjà présentes (même date, même titre, même nombre de phrases) sont ignorées.
+export async function importerHistorique(donnees) {
+  const liste = Array.isArray(donnees?.transcriptions)
+    ? donnees.transcriptions
+    : Array.isArray(donnees)
+      ? donnees
+      : null;
+  if (!liste) throw new Error("Format de sauvegarde non reconnu.");
+
+  const existantes = await listerTranscriptions();
+  const empreinte = (t) => `${t.creeLe}|${t.titre}|${t.phrases.length}`;
+  const dejaLa = new Set(existantes.map(empreinte));
+
+  let ajoutees = 0;
+  let ignorees = 0;
+  let invalides = 0;
+
+  const base = await ouvrirBase();
+  const transaction = base.transaction(TIROIR_TRANSCRIPTIONS, "readwrite");
+  const tiroir = transaction.objectStore(TIROIR_TRANSCRIPTIONS);
+
+  for (const brut of liste) {
+    const propre = normaliserTranscriptionImportee(brut);
+    if (!propre) {
+      invalides += 1;
+      continue;
+    }
+    const cle = empreinte(propre);
+    if (dejaLa.has(cle)) {
+      ignorees += 1;
+      continue;
+    }
+    dejaLa.add(cle);
+    tiroir.add(propre);
+    ajoutees += 1;
+  }
+  await finDeTransaction(transaction);
+  return { ajoutees, ignorees, invalides };
 }

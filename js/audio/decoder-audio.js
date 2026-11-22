@@ -1,6 +1,7 @@
 // ==========================================================
-// Lecture d'un fichier audio (MP3, WAV, M4A, OGG…) ou d'un
-// enregistrement du micro.
+// Lecture d'un fichier audio (MP3, WAV, M4A, OGG…), d'une vidéo
+// (MP4, WebM, MOV : le navigateur en extrait la piste audio) ou
+// d'un enregistrement du micro.
 //
 // Le navigateur « décode » le fichier compressé en une suite de
 // nombres (les échantillons), directement à 16 000 par seconde,

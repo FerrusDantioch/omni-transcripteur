@@ -14,10 +14,13 @@ export function creerCarteTranscription({
   surChangementLangue,
   surMicro,
   surFichier,
+  surPauseEnregistrement,
   surArreterEnregistrement,
   surAnnulerEnregistrement,
+  surTelechargerAudio,
   surArreterTranscription,
 }) {
+  const carte = $("carte-transcription");
   const zoneDepart = $("zone-depart");
   const zoneEnregistrement = $("zone-enregistrement");
   const zoneTraitement = $("zone-traitement");
@@ -26,7 +29,15 @@ export function creerCarteTranscription({
   const boutonFichier = $("bouton-fichier");
   const champFichier = $("champ-fichier");
   const aide = $("aide-transcription");
+  const aideDepot = $("aide-depot");
+  const zoneDernierAudio = $("zone-dernier-audio");
+  const boutonTelechargerAudio = $("bouton-telecharger-audio");
+  const pointRouge = $("enregistrement-point");
+  const libelleEnregistrement = $("enregistrement-libelle");
   const chrono = $("chrono");
+  const microNiveau = $("micro-niveau");
+  const microNiveauEtat = $("micro-niveau-etat");
+  const boutonPauseEnregistrement = $("bouton-pause-enregistrement");
   const traitementTexte = $("traitement-texte");
   const traitementBarre = $("traitement-barre");
   const traitementDetail = $("traitement-detail");
@@ -47,12 +58,42 @@ export function creerCarteTranscription({
     champFichier.value = ""; // permet de rechoisir le même fichier ensuite
     if (fichier) surFichier(fichier);
   });
+  boutonTelechargerAudio.addEventListener("click", () => surTelechargerAudio?.());
+  boutonPauseEnregistrement.addEventListener("click", () => surPauseEnregistrement?.());
   $("bouton-arreter-enregistrement").addEventListener("click", () => surArreterEnregistrement());
   $("bouton-annuler-enregistrement").addEventListener("click", () => surAnnulerEnregistrement());
   boutonArreterTranscription.addEventListener("click", () => {
     boutonArreterTranscription.disabled = true;
     traitementDetail.textContent = "Arrêt après le morceau en cours…";
     surArreterTranscription();
+  });
+
+  // Glisser-déposer d'un fichier audio sur la carte (pratique sur ordinateur)
+  let survolFichier = 0;
+  const depotPossible = () => !boutonFichier.disabled && !zoneDepart.hidden;
+
+  carte.addEventListener("dragenter", (e) => {
+    if (!depotPossible() || !e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    survolFichier += 1;
+    carte.classList.add("carte--depot");
+  });
+  carte.addEventListener("dragover", (e) => {
+    if (!depotPossible() || !e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  carte.addEventListener("dragleave", () => {
+    survolFichier = Math.max(0, survolFichier - 1);
+    if (survolFichier === 0) carte.classList.remove("carte--depot");
+  });
+  carte.addEventListener("drop", (e) => {
+    e.preventDefault();
+    survolFichier = 0;
+    carte.classList.remove("carte--depot");
+    if (!depotPossible()) return;
+    const fichier = e.dataTransfer?.files?.[0];
+    if (fichier) surFichier(fichier);
   });
 
   function montrer(zone) {
@@ -71,16 +112,49 @@ export function creerCarteTranscription({
       boutonMicro.disabled = !pret;
       boutonFichier.disabled = !pret;
       aide.hidden = pret;
+      aideDepot.hidden = !pret;
     },
 
     afficherDepart() {
       montrer("depart");
     },
 
-    afficherEnregistrement() {
+    afficherEnregistrement(peutMettreEnPause = false) {
       cacherMessage(message);
       chrono.textContent = "00:00";
+      microNiveau.value = 0;
+      microNiveauEtat.textContent = "En écoute…";
+      boutonPauseEnregistrement.hidden = !peutMettreEnPause;
+      boutonPauseEnregistrement.textContent = "⏸️ Mettre en pause";
+      pointRouge.classList.remove("point-rouge--pause");
+      libelleEnregistrement.textContent = "Enregistrement en cours :";
       montrer("enregistrement");
+    },
+
+    afficherPauseEnregistrement(enPause) {
+      pointRouge.classList.toggle("point-rouge--pause", enPause);
+      libelleEnregistrement.textContent = enPause ? "Enregistrement en pause :" : "Enregistrement en cours :";
+      boutonPauseEnregistrement.textContent = enPause ? "▶️ Reprendre" : "⏸️ Mettre en pause";
+      if (enPause) {
+        microNiveau.value = 0;
+        microNiveauEtat.textContent = "En pause";
+      } else {
+        microNiveauEtat.textContent = "En écoute…";
+      }
+    },
+
+    majNiveauMicro(pic, enPause) {
+      if (enPause) {
+        microNiveau.value = 0;
+        return;
+      }
+      const pourcentage = pic <= 0 ? 0 : Math.max(0, Math.min(100, ((20 * Math.log10(pic) + 50) / 50) * 100));
+      microNiveau.value = pourcentage;
+      microNiveauEtat.textContent = pic >= 0.02 ? "✓ Son capté" : "Silence";
+    },
+
+    afficherDernierAudio(visible) {
+      zoneDernierAudio.hidden = !visible;
     },
 
     majChrono(secondes) {
@@ -94,6 +168,7 @@ export function creerCarteTranscription({
       traitementBarre.removeAttribute("value");
       traitementDetail.textContent = "";
       boutonArreterTranscription.hidden = true;
+      boutonArreterTranscription.disabled = false;
     },
 
     // Le modèle se charge encore en mémoire

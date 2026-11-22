@@ -7,10 +7,11 @@
 // peut gérer que les pages de son dossier et des sous-dossiers.
 // ==========================================================
 
-// ⚠️ À CHAQUE MODIFICATION d'un fichier de l'application, augmenter ce
-// numéro (v1 → v2 → v3…). Sinon les téléphones garderont l'ancienne
-// version en réserve.
-const VERSION_CACHE = "omni-transcripteur-app-v19";
+// Source unique du numéro de version : changer self.VERSION_APP dans
+// js/version.js met automatiquement à jour le cache et « À propos ».
+importScripts("./js/version.js");
+const VERSION_CACHE = `omni-transcripteur-app-${self.VERSION_APP}`;
+const CACHE_PARTAGE = "omni-transcripteur-partage";
 
 // Liste des fichiers à garder en réserve.
 // Chemins relatifs : ils fonctionnent aussi dans le sous-dossier GitHub Pages.
@@ -21,11 +22,16 @@ const FICHIERS_APPLICATION = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./licences-tierces.txt",
   "./css/style.css",
+  "./assets/logo-omni-systeme.webp",
+  "./js/version.js",
+  "./js/theme-initial.js",
   "./js/app.js",
   "./js/config.js",
   "./js/pwa/register-service-worker.js",
   "./js/pwa/install-button.js",
+  "./js/pwa/partage.js",
   "./js/stockage/base-de-donnees.js",
   "./js/stockage/historique.js",
   "./js/stockage/reglages.js",
@@ -42,6 +48,7 @@ const FICHIERS_APPLICATION = [
   "./js/interface/carte-historique.js",
   "./js/interface/carte-jdr.js",
   "./js/interface/fenetre-consentement.js",
+  "./js/interface/fenetres.js",
   "./js/interface/liste-captures.js",
   "./js/interface/carte-modele.js",
   "./js/interface/carte-resultat.js",
@@ -61,6 +68,8 @@ const FICHIERS_APPLICATION = [
   "./js/capture/session-capture.js",
   "./js/capture/transcrire-capture.js",
   "./js/outils/anti-veille.js",
+  "./js/outils/edition-texte.js",
+  "./js/outils/export-texte.js",
   "./js/outils/format.js",
   "./vendor/transformers/transformers.min.js",
   "./vendor/transformers/ort-wasm-simd-threaded.asyncify.mjs",
@@ -103,7 +112,12 @@ self.addEventListener("activate", (evenement) => {
       .then((noms) =>
         Promise.all(
           noms
-            .filter((nom) => (nom.startsWith("omni-transcripteur-") || nom.startsWith("transcriptor-")) && !nom.startsWith("transcriptor-moteur-"))
+            .filter(
+              (nom) =>
+                (nom.startsWith("omni-transcripteur-") || nom.startsWith("transcriptor-")) &&
+                !nom.startsWith("transcriptor-moteur-") &&
+                nom !== CACHE_PARTAGE
+            )
             .filter((nom) => nom !== VERSION_CACHE)
             .map((nom) => caches.delete(nom))
         )
@@ -118,6 +132,13 @@ self.addEventListener("activate", (evenement) => {
 self.addEventListener("fetch", (evenement) => {
   const requete = evenement.request;
   const url = new URL(requete.url);
+
+  // Partage Android (Web Share Target) : une autre application envoie un fichier audio en POST.
+  // On le met de côté dans un cache local puis on redirige vers la page d'accueil.
+  if (requete.method === "POST" && url.origin === self.location.origin && url.searchParams.get("partage") === "1") {
+    evenement.respondWith(recevoirPartage(requete));
+    return;
+  }
 
   // On ne s'occupe que des fichiers de notre propre site.
   // (Les modèles, sur Hugging Face, sont gérés par le Web Worker.)
@@ -143,6 +164,31 @@ self.addEventListener("fetch", (evenement) => {
       .then(ajouterEnTetesIsolation)
   );
 });
+
+// Enregistre le fichier partagé dans un cache dédié et redirige en GET (303)
+async function recevoirPartage(requete) {
+  try {
+    const formulaire = await requete.formData();
+    const fichier = formulaire.get("audio");
+    if (fichier && typeof fichier.arrayBuffer === "function" && fichier.size > 0) {
+      const cache = await caches.open(CACHE_PARTAGE);
+      const nom = encodeURIComponent(fichier.name || "Audio partagé");
+      await cache.put(
+        "./partage-audio",
+        new Response(fichier, {
+          headers: {
+            "content-type": fichier.type || "application/octet-stream",
+            "x-nom-fichier": nom,
+          },
+        })
+      );
+      return Response.redirect("./?partage=recu", 303);
+    }
+  } catch (erreur) {
+    console.error("Réception du fichier partagé impossible :", erreur);
+  }
+  return Response.redirect("./", 303);
+}
 
 // Ajoute les en-têtes COOP/COEP qui activent le calcul multi-cœurs.
 // GitHub Pages ne permet pas de les régler : le service worker s'en charge.

@@ -9,6 +9,7 @@ import { OCTETS_PAR_SECONDE } from "../capture/session-capture.js";
 import { FREQUENCE_AUDIO } from "../config.js";
 import { formaterDate, formaterDuree, formaterTaille, nomDeFichier } from "../outils/format.js";
 import { afficherMessage, cacherMessage } from "./messages.js";
+import { demanderConfirmation } from "./fenetres.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -85,7 +86,12 @@ export function creerListeCaptures({ surTranscrire }) {
         telecharger(fiche, "autres", "autres joueurs")
       ),
       creerBouton("🗑️ Supprimer", `Supprimer « ${fiche.titre} »`, async () => {
-        if (!confirm(`Supprimer définitivement l'enregistrement « ${fiche.titre} » ? (Les textes déjà transcrits restent dans l'historique.)`)) return;
+        const ok = await demanderConfirmation({
+          titre: "Supprimer l'enregistrement ?",
+          texte: `Supprimer définitivement l'enregistrement « ${fiche.titre} » ? Les textes déjà transcrits restent dans l'historique.`,
+          libelleConfirmer: "Supprimer",
+        });
+        if (!ok) return;
         await supprimerCapture(fiche.id);
         await rafraichir();
         afficherMessage(message, "Enregistrement supprimé : l'espace est libéré.", "info");
@@ -104,7 +110,7 @@ export function creerListeCaptures({ surTranscrire }) {
     lien.download = nomDeFichier(`${fiche.titre} - ${nom}`, "wav");
     lien.click();
     setTimeout(() => URL.revokeObjectURL(lien.href), 60000);
-    afficherMessage(message, `✓ Fichier enregistré dans vos téléchargements (${formaterTaille(fichier.size)}).`, "succes");
+    afficherMessage(message, `✓ Fichier enregistré dans tes téléchargements (${formaterTaille(fichier.size)}).`, "succes");
   }
 
   function creerBouton(texte, description, action, principal = false) {
@@ -118,7 +124,7 @@ export function creerListeCaptures({ surTranscrire }) {
       cacherMessage(message);
       action().catch((erreur) => {
         console.error(erreur);
-        afficherMessage(message, "L'opération n'a pas pu être faite. Réessayez.", "erreur");
+        afficherMessage(message, "L'opération n'a pas pu être faite. Réessaie.", "erreur");
       });
     });
     return bouton;

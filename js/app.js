@@ -7,7 +7,8 @@
 
 import { enregistrerServiceWorker } from "./pwa/register-service-worker.js";
 import { preparerBoutonInstallation } from "./pwa/install-button.js";
-import { QUALITES, FREQUENCE_AUDIO, nombreDeCoeurs } from "./config.js";
+import { recupererFichierPartage } from "./pwa/partage.js";
+import { QUALITES, LANGUES, FREQUENCE_AUDIO, nombreDeCoeurs } from "./config.js";
 import { lireReglages, enregistrerReglages } from "./stockage/reglages.js";
 import { ajouterTranscription, mettreAJourTranscription } from "./stockage/historique.js";
 import { MoteurTranscription } from "./transcription/client-moteur.js";
@@ -16,9 +17,9 @@ import { regrouperEnPhrases } from "./transcription/assemblage.js";
 import { codeErreur } from "./transcription/erreurs.js";
 import { effacerTousLesTelechargements } from "./transcription/telechargement-reprise.js";
 import { decoderAudio } from "./audio/decoder-audio.js";
-import { Enregistreur } from "./audio/enregistreur.js";
+import { Enregistreur, extensionPourMime } from "./audio/enregistreur.js";
 import { garderEcranAllume, laisserEcranSEteindre } from "./outils/anti-veille.js";
-import { formaterDate, formaterDuree } from "./outils/format.js";
+import { formaterDate, formaterDuree, formaterTaille, nomDeFichier } from "./outils/format.js";
 import { creerCarteModele } from "./interface/carte-modele.js";
 import { creerCarteTranscription } from "./interface/carte-transcription.js";
 import { creerCarteResultat } from "./interface/carte-resultat.js";
@@ -30,6 +31,7 @@ import { creerListeCaptures } from "./interface/liste-captures.js";
 import { transcrireCapture } from "./capture/transcrire-capture.js";
 import { mettreAJourCapture } from "./stockage/captures.js";
 import { texteEchecVoix } from "./interface/messages.js";
+import { demanderConfirmation } from "./interface/fenetres.js";
 import { diariserAudio } from "./voix/diariser-audio.js";
 import { attribuerIntervenants } from "./voix/attribution.js";
 
@@ -45,6 +47,8 @@ let occupe = false;          // vrai pendant un enregistrement ou une transcript
 let demandeArret = false;    // l'utilisateur a demandé d'arrêter la transcription
 let minuteurChrono = null;
 const enregistreur = new Enregistreur();
+let dernierEnregistrement = null;     // { blob, titre } gardé en mémoire pour pouvoir le télécharger
+let fichierPartageEnAttente = null;   // { fichier, titre } reçu via le menu « Partager » d'Android
 
 // Le modèle chargé en mémoire est libéré après 5 minutes sans servir
 const DELAI_LIBERATION = 5 * 60 * 1000; // millisecondes
@@ -179,13 +183,21 @@ function changerEtat(nouvelEtat) {
   if (etatModele === "pret") finirAttentes();
   // On peut lancer une transcription dès que le modèle est sur l'appareil,
   // même s'il n'est pas encore en mémoire (il se chargera à ce moment-là)
-  carteTranscription.activer(["pret", "disponible"].includes(etatModele) && !occupe);
+  const pretATranscrire = ["pret", "disponible"].includes(etatModele) && !occupe;
+  carteTranscription.activer(pretATranscrire);
   // On ne change pas de modèle en plein téléchargement ou chargement
   const reglagesModifiables = !occupe && !["verification", "telechargement", "chargement"].includes(etatModele);
   interfaceReglages.activer(reglagesModifiables);
   zoneIntervenants.activer(!occupe);
   carteJdr.activer(!occupe);
   listeCaptures.activer(!occupe);
+
+  // Un fichier audio a été reçu via « Partager » d'Android : on le lance dès que possible
+  if (pretATranscrire && fichierPartageEnAttente) {
+    const { fichier, titre } = fichierPartageEnAttente;
+    fichierPartageEnAttente = null;
+    choisirEtTraiterFichier(fichier, titre);
+  }
 }
 
 // La connexion revient : on relance le téléchargement interrompu
@@ -210,10 +222,12 @@ const carteTranscription = creerCarteTranscription({
   surMicro: demarrerEnregistrement,
   surFichier: (fichier) => {
     const titre = fichier.name.replace(/\.[^.]+$/, "") || "Fichier audio";
-    traiterAudio(fichier, { titre, source: "fichier" });
+    choisirEtTraiterFichier(fichier, titre);
   },
+  surPauseEnregistrement: basculerPauseEnregistrement,
   surArreterEnregistrement: arreterEnregistrement,
   surAnnulerEnregistrement: annulerEnregistrement,
+  surTelechargerAudio: telechargerDernierAudio,
   surArreterTranscription: () => {
     demandeArret = true;
   },
@@ -272,7 +286,7 @@ const listeCaptures = creerListeCaptures({ surTranscrire: traiterCapture });
 function importerPartie() {
   zoneIntervenants.allumer();
   carteTranscription.afficherInfo(
-    "Mode JDR : indiquez le nombre de personnes qui parlent (vous compris), puis choisissez " +
+    "Mode JDR : indique le nombre de personnes qui parlent (toi compris), puis choisis " +
       "le fichier de la partie avec « 📁 Choisir un fichier audio »."
   );
   const reduire = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -291,6 +305,9 @@ const carteHistorique = creerCarteHistorique({
     carteResultat.afficher(transcription);
     carteResultat.montrer();
   },
+  surRenommage: (id, nouveauTitre) => {
+    if (carteResultat.idAffiche === id) carteResultat.majTitre(nouveauTitre);
+  },
   surSuppression: (id) => {
     if (carteResultat.idAffiche === id) carteResultat.effacer();
   },
@@ -298,6 +315,10 @@ const carteHistorique = creerCarteHistorique({
 
 const interfaceReglages = creerReglages({
   reglages,
+  surChangementTheme: (theme) => {
+    reglages = enregistrerReglages({ theme });
+    window.appliquerThemeApp?.(theme);
+  },
   surChangement: (modifications) => {
     reglages = enregistrerReglages(modifications);
     // Changer de moteur ou de vitesse demande un worker neuf
@@ -316,6 +337,7 @@ const interfaceReglages = creerReglages({
     await effacerTousLesTelechargements();
     progression = { recu: 0, total: 0 };
     verifierModele();
+    if (reglages.intervenants) verifierModelesVoix();
   },
 });
 
@@ -336,11 +358,22 @@ async function demarrerEnregistrement() {
     return;
   }
   commencerTravail();
-  carteTranscription.afficherEnregistrement();
-  minuteurChrono = setInterval(() => carteTranscription.majChrono(enregistreur.duree), 500);
+  carteTranscription.afficherEnregistrement(enregistreur.peutMettreEnPause);
+  minuteurChrono = setInterval(() => {
+    carteTranscription.majChrono(enregistreur.duree);
+    carteTranscription.majNiveauMicro(enregistreur.niveau(), enregistreur.enPause);
+  }, 100);
   // Pendant que vous parlez, le modèle se charge en mémoire en arrière-plan
   // (une éventuelle erreur s'affichera dans la carte du modèle)
   attendreModelePret().catch(() => {});
+}
+
+function basculerPauseEnregistrement() {
+  if (enregistreur.enPause) {
+    if (enregistreur.reprendre()) carteTranscription.afficherPauseEnregistrement(false);
+  } else {
+    if (enregistreur.mettreEnPause()) carteTranscription.afficherPauseEnregistrement(true);
+  }
 }
 
 async function arreterEnregistrement() {
@@ -352,6 +385,10 @@ async function arreterEnregistrement() {
     return;
   }
   const titre = `Enregistrement du ${formaterDate(Date.now())}`;
+  // On garde temporairement cet audio en mémoire : même si la transcription échoue,
+  // l'utilisateur peut télécharger son enregistrement pour ne rien perdre.
+  dernierEnregistrement = { blob: enregistrement, titre };
+  carteTranscription.afficherDernierAudio(true);
   await traiterAudio(enregistrement, { titre, source: "micro" });
 }
 
@@ -360,6 +397,34 @@ function annulerEnregistrement() {
   enregistreur.annuler();
   finirTravail();
   carteTranscription.afficherDepart();
+}
+
+function telechargerDernierAudio() {
+  if (!dernierEnregistrement) return;
+  const { blob, titre } = dernierEnregistrement;
+  const ext = extensionPourMime(blob.type);
+  const lien = document.createElement("a");
+  lien.href = URL.createObjectURL(blob);
+  lien.download = nomDeFichier(titre, ext);
+  lien.click();
+  setTimeout(() => URL.revokeObjectURL(lien.href), 15000);
+}
+
+// Prévient avant de décoder un fichier très volumineux (le navigateur le charge en entier en RAM)
+async function choisirEtTraiterFichier(fichier, titre) {
+  const estMobile = navigator.userAgentData?.mobile === true || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  const seuil = (estMobile ? 100 : 250) * 1_000_000;
+  if (fichier.size > seuil) {
+    const ok = await demanderConfirmation({
+      titre: "Fichier volumineux",
+      texte:
+        `Ce fichier pèse ${formaterTaille(fichier.size)}. Pour le lire, le navigateur doit le décompresser ` +
+        "entièrement en mémoire vive : sur un appareil avec peu de mémoire, cela peut échouer. Continuer quand même ?",
+      libelleConfirmer: "Continuer",
+    });
+    if (!ok) return;
+  }
+  await traiterAudio(fichier, { titre, source: "fichier" });
 }
 
 // ---------------------------------------------------------------
@@ -443,7 +508,7 @@ async function traiterAudio(fichierAudio, { titre, source }) {
 
     if (transcription.phrases.length === 0) {
       carteTranscription.afficherInfo(
-        "Aucune parole n'a été détectée. Vérifiez la langue choisie et que le son est assez fort."
+        "Aucune parole n'a été détectée. Vérifie la langue choisie et que le son est assez fort."
       );
     } else if (interrompue) {
       carteTranscription.afficherInfo("Transcription arrêtée. Le texte déjà obtenu est conservé dans l'historique.");
@@ -476,13 +541,33 @@ async function traiterCapture(fiche) {
   if (!["pret", "disponible", "chargement"].includes(etatModele)) {
     carteTranscription.afficherInfo(
       "Le modèle de reconnaissance vocale doit d'abord être téléchargé (carte tout en haut), " +
-        "puis appuyez de nouveau sur « 📝 Transcrire » dans le Mode JDR."
+        "puis appuie de nouveau sur « 📝 Transcrire » dans le Mode JDR."
     );
     document.getElementById("carte-modele").scrollIntoView({ behavior: reduire ? "auto" : "smooth" });
     return;
   }
-  if (fiche.transcription?.id && !fiche.avancement) {
-    if (!confirm("Cette capture a déjà été transcrite. La transcrire à nouveau (par exemple avec une autre qualité) ?")) return;
+  if (fiche.avancement) {
+    const memeReglages = fiche.avancement.langue === reglages.langue && fiche.avancement.qualite === reglages.qualite;
+    if (!memeReglages) {
+      const nomLangue = LANGUES.find((l) => l.code === fiche.avancement.langue)?.nom ?? fiche.avancement.langue;
+      const nomQualite = QUALITES[fiche.avancement.qualite]?.nom ?? fiche.avancement.qualite;
+      const ok = await demanderConfirmation({
+        titre: "Repartir du début ?",
+        texte:
+          `Une transcription est déjà commencée (${nomLangue}, qualité « ${nomQualite} »). ` +
+          "Tes réglages actuels sont différents : continuer effacera cet avancement et repartira du début. " +
+          "Pour reprendre là où tu t'es arrêté, remets cette langue et cette qualité.",
+        libelleConfirmer: "Repartir du début",
+      });
+      if (!ok) return;
+    }
+  } else if (fiche.transcription?.id) {
+    const ok = await demanderConfirmation({
+      titre: "Transcrire à nouveau ?",
+      texte: "Cette capture a déjà été transcrite. La transcrire à nouveau (par exemple avec une autre qualité) ?",
+      libelleConfirmer: "Transcrire à nouveau",
+    });
+    if (!ok) return;
   }
   commencerTravail();
   demandeArret = false;
@@ -500,7 +585,7 @@ async function traiterCapture(fiche) {
     intervenants: [{ nom: fiche.nomJoueur }],
     interrompue: false,
   };
-  const etapes = { micro: "Transcription de votre piste (1/2)…", autres: "Transcription de la piste des autres joueurs (2/2)…" };
+  const etapes = { micro: "Transcription de ta piste (1/2)…", autres: "Transcription de la piste des autres joueurs (2/2)…" };
 
   try {
     const chargement = attendreModelePret();
@@ -527,7 +612,7 @@ async function traiterCapture(fiche) {
     if (resultat.interrompue) {
       carteResultat.afficher(transcription);
       carteTranscription.afficherInfo(
-        "Transcription mise en pause. Appuyez de nouveau sur « 📝 Transcrire » dans le Mode JDR : " +
+        "Transcription mise en pause. Appuie de nouveau sur « 📝 Transcrire » dans le Mode JDR : " +
           "elle reprendra là où elle s'est arrêtée (avec la même langue et la même qualité)."
       );
       return;
@@ -544,7 +629,7 @@ async function traiterCapture(fiche) {
     carteResultat.afficher(transcription);
     carteResultat.montrer();
     const fin = `✓ Transcription terminée (${formaterDuree(transcription.duree)} de partie) et enregistrée dans l'historique.`;
-    carteTranscription.afficherInfo(resultat.infoVoix ? `${fin} ${resultat.infoVoix}` : `${fin} Renommez les intervenants dans le résultat.`);
+    carteTranscription.afficherInfo(resultat.infoVoix ? `${fin} ${resultat.infoVoix}` : `${fin} Renomme les intervenants dans le résultat.`);
   } catch (erreur) {
     console.error(erreur);
     carteTranscription.afficherErreur(erreur.code ?? codeErreur(erreur));
@@ -588,7 +673,24 @@ window.addEventListener("beforeunload", (e) => {
 // ---------------------------------------------------------------
 // Démarrage
 // ---------------------------------------------------------------
+const elVersion = document.getElementById("app-version");
+if (elVersion && window.VERSION_APP) elVersion.textContent = window.VERSION_APP;
+
+async function verifierPartage() {
+  const partage = await recupererFichierPartage();
+  if (!partage) return;
+  if (["pret", "disponible"].includes(etatModele) && !occupe) {
+    choisirEtTraiterFichier(partage.fichier, partage.titre);
+  } else {
+    fichierPartageEnAttente = partage;
+    carteTranscription.afficherInfo(
+      `Fichier audio reçu (« ${partage.titre} »). Télécharge le modèle ci-dessus si besoin : la transcription démarrera dès qu'il sera prêt.`
+    );
+  }
+}
+
 carteHistorique.rafraichir();
 listeCaptures.rafraichir();
 verifierModele();
 if (reglages.intervenants) verifierModelesVoix();
+verifierPartage();

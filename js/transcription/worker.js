@@ -57,14 +57,15 @@ env.backends.onnx.wasm.wasmPaths = { mjs: URL_MOTEUR_MJS, wasm: URL_MOTEUR_WASM 
 // --- État du worker ---
 let transcripteur = null;     // le modèle chargé en mémoire
 let configChargee = null;     // { modele, device }
-let controleur = null;        // permet de mettre le téléchargement en pause
+let controleurModele = null;  // permet de mettre le téléchargement Whisper en pause
+let controleurVoix = null;    // évite de lancer deux téléchargements de voix en même temps
 
 self.addEventListener("message", async (evenement) => {
   const message = evenement.data;
   try {
     if (message.type === "verifier") await verifier(message);
     else if (message.type === "preparer") await preparer(message);
-    else if (message.type === "pause") controleur?.abort(new DOMException("Pause", "AbortError"));
+    else if (message.type === "pause") controleurModele?.abort(new DOMException("Pause", "AbortError"));
     else if (message.type === "transcrire") await transcrire(message);
     else if (message.type === "verifierVoix") envoyer({ type: "resultat", id: message.id, present: await voixEnCache() });
     else if (message.type === "preparerVoix") await preparerVoix(message);
@@ -106,29 +107,30 @@ async function verifier({ modele, moteur, encodeur }) {
 // 2) Préparer : télécharger si besoin, puis charger en mémoire
 // ---------------------------------------------------------------
 async function preparer({ modele, moteur, coeurs, encodeur }) {
-  controleur = new AbortController();
+  controleurModele = new AbortController();
+  const { signal } = controleurModele;
   // Nombre de cœurs du processeur : n'a d'effet qu'avant le tout premier
   // chargement (pour en changer, la page relance un worker neuf)
   if (!transcripteur) env.backends.onnx.wasm.numThreads = coeurs || 2;
   const device = await choisirDevice(moteur);
   try {
-    await charger(modele, device, encodeur);
+    await charger(modele, device, encodeur, signal);
   } catch (erreur) {
     const code = codeErreur(erreur);
     // Si la carte graphique pose problème, on se rabat sur le processeur
     if (device === "webgpu" && moteur === "auto" && !["pause", "connexion", "hors-ligne", "espace"].includes(code)) {
       console.warn("WebGPU indisponible, passage au processeur :", erreur);
       envoyer({ type: "info", code: "repli-processeur" });
-      await charger(modele, "wasm", encodeur);
+      await charger(modele, "wasm", encodeur, signal);
     } else {
       throw erreur;
     }
   } finally {
-    controleur = null;
+    if (controleurModele?.signal === signal) controleurModele = null;
   }
 }
 
-async function charger(modele, device, encodeur) {
+async function charger(modele, device, encodeur, signal) {
   const options = { dtype: compression(device, encodeur), device };
   const config = `${modele}|${device}|${encodeur}`;
 
@@ -171,7 +173,7 @@ async function charger(modele, device, encodeur) {
   // b) Téléchargement, fichier après fichier, avec reprise
   if (aTelecharger.length > 0) {
     if (!navigator.onLine) throw new ErreurHorsLigne();
-    await telechargerTout(aTelecharger, dejaEnCache);
+    await telechargerTout(aTelecharger, dejaEnCache, "modele", signal);
   }
 
   // c) Chargement en mémoire (depuis le cache, sans internet)
@@ -195,13 +197,13 @@ async function charger(modele, device, encodeur) {
 
 // « cible » indique à la page quelle barre de progression mettre à jour
 // (« modele » : Whisper ; « voix » : modèles de reconnaissance des voix)
-async function telechargerTout(liste, dejaEnCache, cible = "modele") {
+async function telechargerTout(liste, dejaEnCache, cible, signal) {
   const total = dejaEnCache + liste.reduce((somme, f) => somme + (f.taille || 0), 0);
   let termine = dejaEnCache; // octets des fichiers déjà complets
 
   for (const fichier of liste) {
     const blob = await telechargerAvecReprise(fichier.url, {
-      signal: controleur.signal,
+      signal,
       surProgression: (recu) => {
         envoyer({ type: "progression", recu: termine + recu, total, cible });
       },
@@ -298,12 +300,14 @@ async function preparerVoix({ id, charger = true }) {
       else liste.push({ url, cache: env.cacheKey, taille: await tailleFichier(url) });
     }
     if (liste.length > 0) {
+      if (controleurVoix) throw new Error("Les modèles de voix sont déjà en cours de téléchargement.");
       if (!navigator.onLine) throw new ErreurHorsLigne();
-      controleur = new AbortController();
+      controleurVoix = new AbortController();
+      const { signal } = controleurVoix;
       try {
-        await telechargerTout(liste, dejaEnCache, "voix");
+        await telechargerTout(liste, dejaEnCache, "voix", signal);
       } finally {
-        controleur = null;
+        if (controleurVoix?.signal === signal) controleurVoix = null;
       }
     }
     if (charger) {

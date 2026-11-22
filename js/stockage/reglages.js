@@ -11,6 +11,8 @@ import {
   MOTEUR_PAR_DEFAUT,
   VITESSES,
   VITESSE_PAR_DEFAUT,
+  THEMES,
+  THEME_PAR_DEFAUT,
   LANGUES,
   LANGUE_PAR_DEFAUT,
 } from "../config.js";
@@ -35,6 +37,7 @@ export function lireReglages() {
     delete enregistres.moteur;
   }
   return {
+    theme: enregistres.theme in THEMES ? enregistres.theme : THEME_PAR_DEFAUT,
     qualite: enregistres.qualite in QUALITES ? enregistres.qualite : QUALITE_PAR_DEFAUT,
     moteur: enregistres.moteur in MOTEURS ? enregistres.moteur : MOTEUR_PAR_DEFAUT,
     vitesse: enregistres.vitesse in VITESSES ? enregistres.vitesse : VITESSE_PAR_DEFAUT,
