@@ -15,6 +15,7 @@ import {
   OCTETS_PAR_SECONDE,
 } from "../capture/session-capture.js";
 import { demanderConsentement } from "./fenetre-consentement.js";
+import { demanderConfirmation } from "./fenetres.js";
 import { formaterHorodatage, formaterTaille, formaterDate, formaterDuree } from "../outils/format.js";
 import { texteErreur, afficherMessage, cacherMessage } from "./messages.js";
 
@@ -303,8 +304,14 @@ export function creerCarteJdr({ reglages, surReglage, surImporter, surDebutCaptu
   }
 
   // ----- Arrêter -----
-  boutonArreter.addEventListener("click", () => {
-    if (!confirm("Arrêter la capture ? L'enregistrement sera gardé sur cet ordinateur.")) return;
+  boutonArreter.addEventListener("click", async () => {
+    const ok = await demanderConfirmation({
+      titre: "Arrêter la capture ?",
+      texte: "L'enregistrement sera gardé sur cet ordinateur et vous pourrez le transcrire ensuite.",
+      libelleConfirmer: "Arrêter la capture",
+      libelleAnnuler: "Continuer la capture",
+    });
+    if (!ok) return;
     terminer();
   });
 

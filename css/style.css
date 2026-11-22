@@ -449,6 +449,12 @@ legend {
   overflow-wrap: anywhere;
 }
 
+.legende-voix__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .legende-voix .bouton {
   width: auto;
 }
@@ -459,6 +465,70 @@ legend {
 
 .legende-voix > p.petit {
   margin: 0.5rem 0 0;
+}
+
+/* Barre d'outils d'édition du résultat + rechercher / remplacer */
+.resultat-outils {
+  margin-bottom: 0.75rem;
+}
+
+.zone-recherche {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--bordure);
+  border-radius: 0.75rem;
+  background: var(--fond);
+}
+
+.zone-recherche .champ-texte {
+  margin-bottom: 0.5rem;
+}
+
+.zone-recherche p.petit {
+  margin: 0 0 0.5rem;
+}
+
+.choix--compact {
+  padding: 0.35rem 0;
+  border-top: none !important;
+}
+
+.choix--compact label {
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* Une phrase en mode « Modifier le texte » */
+.ligne-editable {
+  border-left: 0.35rem solid var(--couleur-voix, var(--accent));
+  padding: 0.4rem 0 0.4rem 0.75rem;
+  margin: 0.6rem 0;
+}
+
+.ligne-editable__entete {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.champ-phrase {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 2px solid var(--bordure);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.champ-phrase:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* Une phrase en mode « Corriger qui parle » */
@@ -624,6 +694,10 @@ legend {
 .element-historique__titre {
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.historique-sauvegarde {
+  margin-top: 0.75rem;
 }
 
 /* ---------- Boutons ---------- */

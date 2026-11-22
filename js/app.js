@@ -30,6 +30,7 @@ import { creerListeCaptures } from "./interface/liste-captures.js";
 import { transcrireCapture } from "./capture/transcrire-capture.js";
 import { mettreAJourCapture } from "./stockage/captures.js";
 import { texteEchecVoix } from "./interface/messages.js";
+import { demanderConfirmation } from "./interface/fenetres.js";
 import { diariserAudio } from "./voix/diariser-audio.js";
 import { attribuerIntervenants } from "./voix/attribution.js";
 
@@ -490,16 +491,23 @@ async function traiterCapture(fiche) {
     if (!memeReglages) {
       const nomLangue = LANGUES.find((l) => l.code === fiche.avancement.langue)?.nom ?? fiche.avancement.langue;
       const nomQualite = QUALITES[fiche.avancement.qualite]?.nom ?? fiche.avancement.qualite;
-      const ok = confirm(
-        `Une transcription est déjà commencée (${nomLangue}, qualité « ${nomQualite} »). ` +
+      const ok = await demanderConfirmation({
+        titre: "Repartir du début ?",
+        texte:
+          `Une transcription est déjà commencée (${nomLangue}, qualité « ${nomQualite} »). ` +
           "Vos réglages actuels sont différents : continuer effacera cet avancement et repartira du début. " +
-          "Pour reprendre là où vous vous êtes arrêté, remettez cette langue et cette qualité.\n\n" +
-          "Repartir du début quand même ?"
-      );
+          "Pour reprendre là où vous vous êtes arrêté, remettez cette langue et cette qualité.",
+        libelleConfirmer: "Repartir du début",
+      });
       if (!ok) return;
     }
   } else if (fiche.transcription?.id) {
-    if (!confirm("Cette capture a déjà été transcrite. La transcrire à nouveau (par exemple avec une autre qualité) ?")) return;
+    const ok = await demanderConfirmation({
+      titre: "Transcrire à nouveau ?",
+      texte: "Cette capture a déjà été transcrite. La transcrire à nouveau (par exemple avec une autre qualité) ?",
+      libelleConfirmer: "Transcrire à nouveau",
+    });
+    if (!ok) return;
   }
   commencerTravail();
   demandeArret = false;

@@ -389,12 +389,61 @@
         </div>
       </dialog>
 
+      <!-- Fenêtre de dialogue réutilisable (confirmations, renommages, fusions) -->
+      <dialog id="fenetre-dialogue" class="fenetre" aria-labelledby="dialogue-titre">
+        <h2 id="dialogue-titre"></h2>
+        <p id="dialogue-texte" hidden></p>
+        <form id="dialogue-formulaire">
+          <div id="dialogue-zone-champ" hidden>
+            <label class="etiquette" id="dialogue-etiquette" for="dialogue-champ"></label>
+            <input type="text" id="dialogue-champ" class="champ-texte" />
+          </div>
+          <div id="dialogue-zone-choix" hidden>
+            <label class="etiquette" id="dialogue-etiquette-choix" for="dialogue-choix"></label>
+            <select id="dialogue-choix" class="liste-deroulante"></select>
+          </div>
+          <div class="boutons">
+            <button type="submit" class="bouton bouton--principal" id="dialogue-valider">Valider</button>
+            <button type="button" class="bouton bouton--discret" id="dialogue-annuler">Annuler</button>
+          </div>
+        </form>
+      </dialog>
+
       <!-- ====== 3. Résultat ====== -->
       <section class="carte" id="carte-resultat" aria-labelledby="resultat-titre" hidden>
         <h2 id="resultat-titre">Résultat</h2>
         <p id="resultat-infos" class="petit"></p>
-        <!-- Intervenants : renommer, corriger qui parle (rempli par js/interface/edition-intervenants.js) -->
+        <!-- Intervenants : renommer, fusionner, corriger qui parle (rempli par js/interface/edition-intervenants.js) -->
         <div id="resultat-intervenants" hidden></div>
+        <!-- Outils d'édition du texte (visibles une fois la transcription terminée) -->
+        <div id="resultat-outils" class="boutons boutons--ligne resultat-outils" hidden>
+          <button type="button" class="bouton bouton--petit" id="bouton-editer-texte" aria-pressed="false">
+            ✏️ Modifier le texte
+          </button>
+          <button type="button" class="bouton bouton--petit" id="bouton-rechercher" aria-expanded="false" aria-controls="zone-recherche">
+            🔍 Rechercher / Remplacer
+          </button>
+        </div>
+        <div id="zone-recherche" class="zone-recherche" hidden>
+          <label class="etiquette" for="champ-recherche">Rechercher dans le texte</label>
+          <input type="search" id="champ-recherche" class="champ-texte" placeholder="Mot ou nom à chercher…" />
+          <p id="recherche-compteur" class="petit" role="status"></p>
+          <div class="choix choix--compact">
+            <input type="checkbox" id="recherche-filtrer" />
+            <label for="recherche-filtrer">Afficher uniquement les phrases correspondantes</label>
+          </div>
+          <div class="choix choix--compact">
+            <input type="checkbox" id="recherche-casse" />
+            <label for="recherche-casse">Respecter majuscules / minuscules</label>
+          </div>
+          <label class="etiquette" for="champ-remplacement">Remplacer par</label>
+          <input type="text" id="champ-remplacement" class="champ-texte" placeholder="Nouveau texte…" />
+          <div class="boutons">
+            <button type="button" class="bouton bouton--petit" id="bouton-remplacer-tout" disabled>
+              🔁 Remplacer tout
+            </button>
+          </div>
+        </div>
         <div id="resultat-texte" class="texte-transcrit"></div>
         <div class="boutons boutons--ligne">
           <button type="button" class="bouton" id="bouton-copier">📋 Copier</button>
@@ -409,6 +458,15 @@
         <h2 id="titre-historique">Historique</h2>
         <p id="historique-vide" class="note">Aucune transcription pour l'instant.</p>
         <ul id="historique-liste" class="liste-historique"></ul>
+        <div class="boutons boutons--ligne historique-sauvegarde">
+          <button type="button" class="bouton bouton--petit bouton--discret" id="bouton-exporter-historique" disabled>
+            💾 Sauvegarder l'historique (.json)
+          </button>
+          <button type="button" class="bouton bouton--petit bouton--discret" id="bouton-importer-historique">
+            📂 Importer (.json)
+          </button>
+          <input type="file" id="champ-import-historique" accept=".json,application/json" hidden />
+        </div>
         <p id="historique-message" class="message" role="status" hidden></p>
       </section>
 

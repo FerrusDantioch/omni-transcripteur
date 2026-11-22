@@ -10,7 +10,7 @@
 // ⚠️ À CHAQUE MODIFICATION d'un fichier de l'application, augmenter ce
 // numéro (v1 → v2 → v3…). Sinon les téléphones garderont l'ancienne
 // version en réserve.
-const VERSION_CACHE = "omni-transcripteur-app-v20";
+const VERSION_CACHE = "omni-transcripteur-app-v21";
 
 // Liste des fichiers à garder en réserve.
 // Chemins relatifs : ils fonctionnent aussi dans le sous-dossier GitHub Pages.
@@ -42,6 +42,7 @@ const FICHIERS_APPLICATION = [
   "./js/interface/carte-historique.js",
   "./js/interface/carte-jdr.js",
   "./js/interface/fenetre-consentement.js",
+  "./js/interface/fenetres.js",
   "./js/interface/liste-captures.js",
   "./js/interface/carte-modele.js",
   "./js/interface/carte-resultat.js",
@@ -61,6 +62,7 @@ const FICHIERS_APPLICATION = [
   "./js/capture/session-capture.js",
   "./js/capture/transcrire-capture.js",
   "./js/outils/anti-veille.js",
+  "./js/outils/edition-texte.js",
   "./js/outils/format.js",
   "./vendor/transformers/transformers.min.js",
   "./vendor/transformers/ort-wasm-simd-threaded.asyncify.mjs",

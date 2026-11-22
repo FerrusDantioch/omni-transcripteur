@@ -33,6 +33,12 @@ import { decouperEnMorceaux, volumeMoyen, estSilencieux } from "../js/audio/deco
 import { regrouperEmpreintes } from "../js/voix/regroupement.js";
 import { attribuerIntervenants } from "../js/voix/attribution.js";
 import { PisteAudio } from "../js/capture/piste-audio.js";
+import {
+  fusionnerIntervenants,
+  compterOccurrences,
+  remplacerDansPhrases,
+  normaliserTranscriptionImportee,
+} from "../js/outils/edition-texte.js";
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -268,5 +274,79 @@ describe("Service Worker (sw.js)", () => {
         assert.ok(listes.has(fichier), `Fichier oublié dans FICHIERS_APPLICATION de sw.js : ${fichier}`);
       }
     }
+  });
+});
+
+// ------------------------------------------------------------
+// 8. Édition de texte, fusion d'intervenants et import JSON
+// ------------------------------------------------------------
+describe("Édition et sauvegarde (js/outils/edition-texte.js)", () => {
+  it("fusionne deux intervenants et décale correctement les numéros suivants", () => {
+    const t = {
+      intervenants: [{ nom: "Marie" }, { nom: "Bob" }, { nom: "Intervenant 3" }],
+      phrases: [
+        { debut: 0, fin: 2, texte: "Salut.", intervenant: 0 },
+        { debut: 2, fin: 4, texte: "Bonjour !", intervenant: 1 },
+        { debut: 4, fin: 6, texte: "C'est encore Marie.", intervenant: 2 },
+      ],
+    };
+    const nouvelIndice = fusionnerIntervenants(t, 2, 0);
+    assert.equal(nouvelIndice, 0);
+    assert.deepEqual(t.intervenants, [{ nom: "Marie" }, { nom: "Bob" }]);
+    assert.deepEqual(t.phrases.map((p) => p.intervenant), [0, 1, 0]);
+
+    // Cas où la source est avant la cible : la cible recule de 1
+    const t2 = {
+      intervenants: [{ nom: "Doublon" }, { nom: "Alice" }, { nom: "Paul" }],
+      phrases: [
+        { debut: 0, fin: 1, texte: "A", intervenant: 0 },
+        { debut: 1, fin: 2, texte: "B", intervenant: 1 },
+        { debut: 2, fin: 3, texte: "C", intervenant: 2 },
+      ],
+    };
+    assert.equal(fusionnerIntervenants(t2, 0, 2), 1);
+    assert.deepEqual(t2.intervenants, [{ nom: "Alice" }, { nom: "Paul" }]);
+    assert.deepEqual(t2.phrases.map((p) => p.intervenant), [1, 0, 1]);
+  });
+
+  it("compte et remplace toutes les occurrences en gérant casse et caractères spéciaux", () => {
+    const phrases = [
+      { texte: "Le goblain attaque le Goblain (niv. 2)." },
+      { texte: "Rien ici." },
+      { texte: "Un autre goblain ?" },
+    ];
+    assert.deepEqual(compterOccurrences(phrases, "goblain"), { occurrences: 3, phrasesTouchees: 2 });
+    assert.deepEqual(compterOccurrences(phrases, "Goblain", { respecterCasse: true }), {
+      occurrences: 1,
+      phrasesTouchees: 1,
+    });
+    assert.deepEqual(compterOccurrences(phrases, "(niv. 2)"), { occurrences: 1, phrasesTouchees: 1 });
+
+    const nb = remplacerDansPhrases(phrases, "goblain", "gobelin");
+    assert.equal(nb, 3);
+    assert.equal(phrases[0].texte, "Le gobelin attaque le gobelin (niv. 2).");
+    assert.equal(phrases[2].texte, "Un autre gobelin ?");
+  });
+
+  it("valide et nettoie une transcription importée depuis JSON et rejette les données invalides", () => {
+    assert.equal(normaliserTranscriptionImportee(null), null);
+    assert.equal(normaliserTranscriptionImportee({ titre: "Vide", phrases: [] }), null);
+
+    const propre = normaliserTranscriptionImportee({
+      id: 99,
+      titre: "  Partie JDR  ",
+      creeLe: 1760000000000,
+      duree: 120,
+      source: "capture",
+      langue: "fr",
+      qualite: "precis",
+      phrases: [{ debut: 1, fin: 4, texte: "  Bonjour ! ", intervenant: 0 }, { texte: "   " }],
+      intervenants: [{ nom: "  Maître du jeu " }],
+    });
+    assert.equal(propre.id, undefined);
+    assert.equal(propre.titre, "Partie JDR");
+    assert.equal(propre.phrases.length, 1);
+    assert.equal(propre.phrases[0].texte, "Bonjour !");
+    assert.deepEqual(propre.intervenants, [{ nom: "Maître du jeu" }]);
   });
 });

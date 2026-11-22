@@ -8,9 +8,12 @@ import {
   lireTranscription,
   renommerTranscription,
   supprimerTranscription,
+  exporterHistorique,
+  importerHistorique,
 } from "../stockage/historique.js";
-import { formaterDate, formaterDuree } from "../outils/format.js";
+import { formaterDate, formaterDuree, nomDeFichier } from "../outils/format.js";
 import { afficherMessage, cacherMessage } from "./messages.js";
+import { demanderConfirmation, demanderTexte } from "./fenetres.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -18,6 +21,60 @@ export function creerCarteHistorique({ surOuvrir, surRenommage, surSuppression }
   const liste = $("historique-liste");
   const vide = $("historique-vide");
   const message = $("historique-message");
+  const boutonExporter = $("bouton-exporter-historique");
+  const boutonImporter = $("bouton-importer-historique");
+  const champImport = $("champ-import-historique");
+
+  boutonExporter.addEventListener("click", async () => {
+    try {
+      const donnees = await exporterHistorique();
+      if (donnees.transcriptions.length === 0) return;
+      const fichier = new Blob([JSON.stringify(donnees, null, 2)], { type: "application/json;charset=utf-8" });
+      const lien = document.createElement("a");
+      lien.href = URL.createObjectURL(fichier);
+      const date = new Date().toISOString().slice(0, 10);
+      lien.download = nomDeFichier(`omni-transcripteur-historique-${date}`, "json");
+      lien.click();
+      setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
+      afficherMessage(
+        message,
+        `✓ Sauvegarde téléchargée (${donnees.transcriptions.length} transcription${donnees.transcriptions.length > 1 ? "s" : ""}).`,
+        "succes"
+      );
+    } catch (erreur) {
+      console.error(erreur);
+      afficherMessage(message, "La sauvegarde n'a pas pu être créée. Réessayez.", "erreur");
+    }
+  });
+
+  boutonImporter.addEventListener("click", () => champImport.click());
+  champImport.addEventListener("change", async () => {
+    const fichier = champImport.files[0];
+    champImport.value = "";
+    if (!fichier) return;
+    try {
+      const donnees = JSON.parse(await fichier.text());
+      const { ajoutees, ignorees, invalides } = await importerHistorique(donnees);
+      await rafraichir();
+      if (ajoutees === 0 && ignorees > 0) {
+        afficherMessage(message, "Toutes ces transcriptions sont déjà dans l'historique.", "info");
+      } else if (ajoutees === 0) {
+        afficherMessage(message, "Aucune transcription valide trouvée dans ce fichier.", "erreur");
+      } else {
+        const parties = [`✓ ${ajoutees} transcription${ajoutees > 1 ? "s" : ""} importée${ajoutees > 1 ? "s" : ""}`];
+        if (ignorees > 0) parties.push(`${ignorees} déjà présente${ignorees > 1 ? "s" : ""}`);
+        if (invalides > 0) parties.push(`${invalides} ignorée${invalides > 1 ? "s" : ""}`);
+        afficherMessage(message, `${parties.join(" · ")}.`, "succes");
+      }
+    } catch (erreur) {
+      console.error(erreur);
+      afficherMessage(
+        message,
+        "Ce fichier n'est pas une sauvegarde valide d'Omni-Transcripteur (.json).",
+        "erreur"
+      );
+    }
+  });
 
   async function rafraichir() {
     let transcriptions = [];
@@ -28,6 +85,7 @@ export function creerCarteHistorique({ surOuvrir, surRenommage, surSuppression }
       afficherMessage(message, "L'historique n'a pas pu être lu sur cet appareil.", "erreur");
     }
     vide.hidden = transcriptions.length > 0;
+    boutonExporter.disabled = transcriptions.length === 0;
     liste.replaceChildren(...transcriptions.map(creerElement));
   }
 
@@ -55,16 +113,26 @@ export function creerCarteHistorique({ surOuvrir, surRenommage, surSuppression }
         if (complete) surOuvrir(complete);
       }),
       creerBouton("Renommer", `Renommer « ${t.titre} »`, async () => {
-        const nouveau = prompt("Nouveau nom :", t.titre);
-        if (nouveau === null || !nouveau.trim()) return; // annulé
-        const titrePropre = nouveau.trim();
-        await renommerTranscription(t.id, titrePropre);
-        surRenommage?.(t.id, titrePropre);
+        const nouveau = await demanderTexte({
+          titre: "Renommer la transcription",
+          etiquette: "Nouveau nom",
+          valeurInitiale: t.titre,
+          maxLength: 120,
+          libelleValider: "Renommer",
+        });
+        if (!nouveau) return; // annulé
+        await renommerTranscription(t.id, nouveau);
+        surRenommage?.(t.id, nouveau);
         await rafraichir();
         afficherMessage(message, "✓ Transcription renommée.", "succes");
       }),
       creerBouton("Supprimer", `Supprimer « ${t.titre} »`, async () => {
-        if (!confirm(`Supprimer définitivement « ${t.titre} » ?`)) return;
+        const ok = await demanderConfirmation({
+          titre: "Supprimer la transcription",
+          texte: `Supprimer définitivement « ${t.titre} » ?`,
+          libelleConfirmer: "Supprimer",
+        });
+        if (!ok) return;
         await supprimerTranscription(t.id);
         surSuppression(t.id);
         await rafraichir();

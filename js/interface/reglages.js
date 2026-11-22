@@ -5,6 +5,7 @@
 import { QUALITES, MOTEURS, VITESSES } from "../config.js";
 import { formaterTaille } from "../outils/format.js";
 import { afficherMessage, cacherMessage } from "./messages.js";
+import { demanderConfirmation } from "./fenetres.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -40,10 +41,13 @@ export function creerReglages({ reglages, surChangement, surSupprimerModeles }) 
   );
 
   $("bouton-supprimer-modeles").addEventListener("click", async () => {
-    const ok = confirm(
-      "Supprimer les modèles téléchargés ? Il faudra les retélécharger (avec internet) pour transcrire. " +
-        "L'historique des transcriptions est conservé."
-    );
+    const ok = await demanderConfirmation({
+      titre: "Supprimer les modèles téléchargés ?",
+      texte:
+        "Il faudra les retélécharger (avec internet) pour transcrire. " +
+        "L'historique des transcriptions est conservé.",
+      libelleConfirmer: "Supprimer les modèles",
+    });
     if (!ok) return;
     await surSupprimerModeles();
     afficherMessage(message, "✓ Modèles supprimés.", "succes");
