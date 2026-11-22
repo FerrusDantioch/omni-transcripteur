@@ -39,6 +39,7 @@ import {
   remplacerDansPhrases,
   normaliserTranscriptionImportee,
 } from "../js/outils/edition-texte.js";
+import { extensionPourMime } from "../js/audio/enregistreur.js";
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -257,7 +258,9 @@ describe("PisteAudio (js/capture/piste-audio.js)", () => {
 describe("Service Worker (sw.js)", () => {
   it("liste tous les fichiers de l'application sans oubli ni lien cassé", () => {
     const contenu = fs.readFileSync(path.join(RACINE, "sw.js"), "utf8");
-    const listes = new Set([...contenu.matchAll(/"(\.\/[^"]+)"/g)].map((m) => m[1]));
+    const bloc = /FICHIERS_APPLICATION\s*=\s*\[([\s\S]*?)\]/.exec(contenu);
+    assert.ok(bloc, "Tableau FICHIERS_APPLICATION introuvable dans sw.js");
+    const listes = new Set([...bloc[1].matchAll(/"(\.\/[^"]+)"/g)].map((m) => m[1]));
     for (const fichier of listes) {
       if (fichier === "./") continue;
       assert.ok(fs.existsSync(path.join(RACINE, fichier)), `Fichier manquant cité dans sw.js : ${fichier}`);
@@ -348,5 +351,13 @@ describe("Édition et sauvegarde (js/outils/edition-texte.js)", () => {
     assert.equal(propre.phrases.length, 1);
     assert.equal(propre.phrases[0].texte, "Bonjour !");
     assert.deepEqual(propre.intervenants, [{ nom: "Maître du jeu" }]);
+  });
+
+  it("choisit la bonne extension de fichier pour un enregistrement micro", () => {
+    assert.equal(extensionPourMime("audio/webm;codecs=opus"), "webm");
+    assert.equal(extensionPourMime("audio/ogg;codecs=opus"), "ogg");
+    assert.equal(extensionPourMime("audio/mp4"), "m4a");
+    assert.equal(extensionPourMime("audio/wav"), "wav");
+    assert.equal(extensionPourMime(""), "webm");
   });
 });

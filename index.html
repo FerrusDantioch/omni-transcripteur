@@ -145,17 +145,33 @@
             />
           </div>
           <p id="aide-transcription" class="note">Le modèle doit d'abord être téléchargé (voir ci-dessus).</p>
+          <p id="aide-depot" class="note aide-depot" hidden>
+            Astuce : sur ordinateur, vous pouvez aussi glisser-déposer un fichier audio sur cette carte.
+          </p>
+          <div id="zone-dernier-audio" class="zone-dernier-audio" hidden>
+            <button type="button" class="bouton bouton--petit bouton--discret" id="bouton-telecharger-audio">
+              🎧 Télécharger le dernier enregistrement micro
+            </button>
+          </div>
         </div>
 
         <div id="zone-enregistrement" hidden>
           <p class="chrono">
-            <span class="point-rouge" aria-hidden="true"></span>
-            Enregistrement en cours :
+            <span class="point-rouge" id="enregistrement-point" aria-hidden="true"></span>
+            <span id="enregistrement-libelle">Enregistrement en cours :</span>
             <strong id="chrono" aria-live="off">00:00</strong>
           </p>
+          <div class="niveau">
+            <label for="micro-niveau">🎙️ Niveau du micro</label>
+            <progress id="micro-niveau" class="niveau__barre" max="100" value="0"></progress>
+            <p id="micro-niveau-etat" class="petit">En écoute…</p>
+          </div>
           <div class="boutons">
             <button type="button" class="bouton bouton--principal" id="bouton-arreter-enregistrement">
               ⏹️ Arrêter et transcrire
+            </button>
+            <button type="button" class="bouton" id="bouton-pause-enregistrement" hidden>
+              ⏸️ Mettre en pause
             </button>
             <button type="button" class="bouton bouton--discret" id="bouton-annuler-enregistrement">
               Annuler l'enregistrement

@@ -36,5 +36,19 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "./?partage=1",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "titre",
+      "files": [
+        {
+          "name": "audio",
+          "accept": ["audio/*", ".mp3", ".wav", ".m4a", ".ogg", ".oga", ".opus", ".webm", ".aac", ".flac"]
+        }
+      ]
+    }
+  }
 }

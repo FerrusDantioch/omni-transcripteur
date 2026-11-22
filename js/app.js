@@ -7,6 +7,7 @@
 
 import { enregistrerServiceWorker } from "./pwa/register-service-worker.js";
 import { preparerBoutonInstallation } from "./pwa/install-button.js";
+import { recupererFichierPartage } from "./pwa/partage.js";
 import { QUALITES, LANGUES, FREQUENCE_AUDIO, nombreDeCoeurs } from "./config.js";
 import { lireReglages, enregistrerReglages } from "./stockage/reglages.js";
 import { ajouterTranscription, mettreAJourTranscription } from "./stockage/historique.js";
@@ -16,9 +17,9 @@ import { regrouperEnPhrases } from "./transcription/assemblage.js";
 import { codeErreur } from "./transcription/erreurs.js";
 import { effacerTousLesTelechargements } from "./transcription/telechargement-reprise.js";
 import { decoderAudio } from "./audio/decoder-audio.js";
-import { Enregistreur } from "./audio/enregistreur.js";
+import { Enregistreur, extensionPourMime } from "./audio/enregistreur.js";
 import { garderEcranAllume, laisserEcranSEteindre } from "./outils/anti-veille.js";
-import { formaterDate, formaterDuree } from "./outils/format.js";
+import { formaterDate, formaterDuree, formaterTaille, nomDeFichier } from "./outils/format.js";
 import { creerCarteModele } from "./interface/carte-modele.js";
 import { creerCarteTranscription } from "./interface/carte-transcription.js";
 import { creerCarteResultat } from "./interface/carte-resultat.js";
@@ -46,6 +47,8 @@ let occupe = false;          // vrai pendant un enregistrement ou une transcript
 let demandeArret = false;    // l'utilisateur a demandé d'arrêter la transcription
 let minuteurChrono = null;
 const enregistreur = new Enregistreur();
+let dernierEnregistrement = null;     // { blob, titre } gardé en mémoire pour pouvoir le télécharger
+let fichierPartageEnAttente = null;   // { fichier, titre } reçu via le menu « Partager » d'Android
 
 // Le modèle chargé en mémoire est libéré après 5 minutes sans servir
 const DELAI_LIBERATION = 5 * 60 * 1000; // millisecondes
@@ -180,13 +183,21 @@ function changerEtat(nouvelEtat) {
   if (etatModele === "pret") finirAttentes();
   // On peut lancer une transcription dès que le modèle est sur l'appareil,
   // même s'il n'est pas encore en mémoire (il se chargera à ce moment-là)
-  carteTranscription.activer(["pret", "disponible"].includes(etatModele) && !occupe);
+  const pretATranscrire = ["pret", "disponible"].includes(etatModele) && !occupe;
+  carteTranscription.activer(pretATranscrire);
   // On ne change pas de modèle en plein téléchargement ou chargement
   const reglagesModifiables = !occupe && !["verification", "telechargement", "chargement"].includes(etatModele);
   interfaceReglages.activer(reglagesModifiables);
   zoneIntervenants.activer(!occupe);
   carteJdr.activer(!occupe);
   listeCaptures.activer(!occupe);
+
+  // Un fichier audio a été reçu via « Partager » d'Android : on le lance dès que possible
+  if (pretATranscrire && fichierPartageEnAttente) {
+    const { fichier, titre } = fichierPartageEnAttente;
+    fichierPartageEnAttente = null;
+    choisirEtTraiterFichier(fichier, titre);
+  }
 }
 
 // La connexion revient : on relance le téléchargement interrompu
@@ -211,10 +222,12 @@ const carteTranscription = creerCarteTranscription({
   surMicro: demarrerEnregistrement,
   surFichier: (fichier) => {
     const titre = fichier.name.replace(/\.[^.]+$/, "") || "Fichier audio";
-    traiterAudio(fichier, { titre, source: "fichier" });
+    choisirEtTraiterFichier(fichier, titre);
   },
+  surPauseEnregistrement: basculerPauseEnregistrement,
   surArreterEnregistrement: arreterEnregistrement,
   surAnnulerEnregistrement: annulerEnregistrement,
+  surTelechargerAudio: telechargerDernierAudio,
   surArreterTranscription: () => {
     demandeArret = true;
   },
@@ -341,11 +354,22 @@ async function demarrerEnregistrement() {
     return;
   }
   commencerTravail();
-  carteTranscription.afficherEnregistrement();
-  minuteurChrono = setInterval(() => carteTranscription.majChrono(enregistreur.duree), 500);
+  carteTranscription.afficherEnregistrement(enregistreur.peutMettreEnPause);
+  minuteurChrono = setInterval(() => {
+    carteTranscription.majChrono(enregistreur.duree);
+    carteTranscription.majNiveauMicro(enregistreur.niveau(), enregistreur.enPause);
+  }, 100);
   // Pendant que vous parlez, le modèle se charge en mémoire en arrière-plan
   // (une éventuelle erreur s'affichera dans la carte du modèle)
   attendreModelePret().catch(() => {});
+}
+
+function basculerPauseEnregistrement() {
+  if (enregistreur.enPause) {
+    if (enregistreur.reprendre()) carteTranscription.afficherPauseEnregistrement(false);
+  } else {
+    if (enregistreur.mettreEnPause()) carteTranscription.afficherPauseEnregistrement(true);
+  }
 }
 
 async function arreterEnregistrement() {
@@ -357,6 +381,10 @@ async function arreterEnregistrement() {
     return;
   }
   const titre = `Enregistrement du ${formaterDate(Date.now())}`;
+  // On garde temporairement cet audio en mémoire : même si la transcription échoue,
+  // l'utilisateur peut télécharger son enregistrement pour ne rien perdre.
+  dernierEnregistrement = { blob: enregistrement, titre };
+  carteTranscription.afficherDernierAudio(true);
   await traiterAudio(enregistrement, { titre, source: "micro" });
 }
 
@@ -365,6 +393,34 @@ function annulerEnregistrement() {
   enregistreur.annuler();
   finirTravail();
   carteTranscription.afficherDepart();
+}
+
+function telechargerDernierAudio() {
+  if (!dernierEnregistrement) return;
+  const { blob, titre } = dernierEnregistrement;
+  const ext = extensionPourMime(blob.type);
+  const lien = document.createElement("a");
+  lien.href = URL.createObjectURL(blob);
+  lien.download = nomDeFichier(titre, ext);
+  lien.click();
+  setTimeout(() => URL.revokeObjectURL(lien.href), 15000);
+}
+
+// Prévient avant de décoder un fichier très volumineux (le navigateur le charge en entier en RAM)
+async function choisirEtTraiterFichier(fichier, titre) {
+  const estMobile = navigator.userAgentData?.mobile === true || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  const seuil = (estMobile ? 100 : 250) * 1_000_000;
+  if (fichier.size > seuil) {
+    const ok = await demanderConfirmation({
+      titre: "Fichier volumineux",
+      texte:
+        `Ce fichier pèse ${formaterTaille(fichier.size)}. Pour le lire, le navigateur doit le décompresser ` +
+        "entièrement en mémoire vive : sur un appareil avec peu de mémoire, cela peut échouer. Continuer quand même ?",
+      libelleConfirmer: "Continuer",
+    });
+    if (!ok) return;
+  }
+  await traiterAudio(fichier, { titre, source: "fichier" });
 }
 
 // ---------------------------------------------------------------
@@ -613,7 +669,21 @@ window.addEventListener("beforeunload", (e) => {
 // ---------------------------------------------------------------
 // Démarrage
 // ---------------------------------------------------------------
+async function verifierPartage() {
+  const partage = await recupererFichierPartage();
+  if (!partage) return;
+  if (["pret", "disponible"].includes(etatModele) && !occupe) {
+    choisirEtTraiterFichier(partage.fichier, partage.titre);
+  } else {
+    fichierPartageEnAttente = partage;
+    carteTranscription.afficherInfo(
+      `Fichier audio reçu (« ${partage.titre} »). Téléchargez le modèle ci-dessus si besoin : la transcription démarrera dès qu'il sera prêt.`
+    );
+  }
+}
+
 carteHistorique.rafraichir();
 listeCaptures.rafraichir();
 verifierModele();
 if (reglages.intervenants) verifierModelesVoix();
+verifierPartage();

@@ -274,6 +274,28 @@ legend {
 }
 
 /* ---------- Enregistrement ---------- */
+.carte--depot {
+  border-color: var(--accent);
+  border-style: dashed;
+  border-width: 2px;
+  background: var(--info-fond);
+}
+
+.aide-depot {
+  margin-top: 0.6rem;
+}
+
+/* Sur les petits écrans tactiles, le glisser-déposer de fichier est inutile */
+@media (hover: none) and (pointer: coarse) {
+  .aide-depot {
+    display: none;
+  }
+}
+
+.zone-dernier-audio {
+  margin-top: 0.75rem;
+}
+
 .chrono {
   font-size: 1.2rem;
   margin: 0 0 1rem;
@@ -291,6 +313,10 @@ legend {
   margin-right: 0.35rem;
   border-radius: 50%;
   background: var(--enregistrement);
+}
+
+.point-rouge--pause {
+  background: var(--texte-doux);
 }
 
 /* ---------- Texte transcrit ---------- */
